@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
 	Robot *rob = new Robot(modulePath, robotName, Robot::Sunflower);
 	int color[] = {0,0,0};
 	std::cout << rob->setLight(color) << '\n';
+	//std::cout << rob->
 
 	std::cout << "Done" << std::endl;
 	return 0;
