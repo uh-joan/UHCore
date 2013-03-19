@@ -21,9 +21,45 @@ class CareOBot(object):
     def setComponentState(self, name, value):
         #check if the component has been initialised, and init if it hasn't
         if len(self._ros.getTopics('/%(name)s_controller' % { 'name': name })) == 0:
-            self._cob.initComponent(name)
+            self._robInt.initComponent(name)
         
         return super(CareOBot, self).setComponentState(name, value)
+    
+    def resolveComponentState(self, componentName, state, tolerance=0.10):
+        if state == None:
+            return (None, None)
+        
+        curPos = state.actual.positions
+
+        positions = self.getComponentPositions(componentName)
+
+        if len(positions) == 0:
+            return ('', curPos)
+
+        name = None
+        diff = None
+        for positionName in positions:
+            positionValue = self.getValue(positions[positionName])
+            if type(positionValue) is not list:
+                #we don't currently handle nested types
+                continue
+
+            if len(positionValue) != len(curPos):
+                #raise Exception("Arguement lengths don't match")
+                continue
+            
+            dist = 0
+            for index in range(len(positionValue)):
+                dist += math.pow(curPos[index] - positionValue[index], 2)
+            dist = math.sqrt(dist)
+            if name == None or dist < diff:
+                name = positionName
+                diff = dist
+                        
+        if diff <= tolerance:
+            return (name, curPos)
+        else:
+            return ('', curPos)    
 
 class ScriptServer(object):
 

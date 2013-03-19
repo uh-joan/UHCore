@@ -1,6 +1,8 @@
 #include "UHCore.h"
 #include <iostream>
 
+using namespace std;
+
 /*
  be sure to link in python during compilation ('-lpython2.6' for gcc linker)
  */
@@ -19,7 +21,7 @@ int main(int argc, char *argv[]) {
 	std::cout << rob->setLight(color) << '\n';
 	//std::cout << rob->
 
-	std::cout << "Done" << std::endl;
+	cout << "Done" << endl;
 	return 0;
 }
 

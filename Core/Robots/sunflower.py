@@ -11,6 +11,13 @@ class Sunflower(Robot):
 
     def getImage(self, leftRight='right', retFormat='PNG'):
         pass
+    
+    def setComponentState(self, name, value):
+        #check if the component has been initialised, and init if it hasn't
+        if name == 'base':
+            self._robInt.initComponent(name)
+        
+        return super(Sunflower, self).setComponentState(name, value)
 
 class ActionLib(object):
         
@@ -35,7 +42,14 @@ class ActionLib(object):
         return 5
         
     def initComponent(self, name):
-        return 3
+        if name == 'base':
+            goal = self._sfMsgs.SunflowerGoal(
+                                                   action='init',
+                                                   component=name)
+            client = self._sfClient
+            return client.send_goal_and_wait(goal)
+        else:
+            return 3
     
     def runComponent(self, name, value, mode=None, blocking=True):
         if name == 'light':
@@ -45,6 +59,7 @@ class ActionLib(object):
             (namedPosition, joints) = (value, []) if str == type(value) else ('', value)
             
             goal = self._sfMsgs.SunflowerGoal(
+                                                   action='move',
                                                    component=name,
                                                    namedPosition=namedPosition,
                                                    jointPositions=joints)
@@ -60,22 +75,29 @@ class ActionLib(object):
     
 if __name__ == '__main__':
     s = Sunflower()
-    print s.setLight([1,0,0])
+    print "Light red"
+    s.setLight([1,0,0])
+    
     # joint_names: ["head_pan", "head_tilt", "neck_upper", "neck_lower"]
-    print s.setComponentState('head',
-                               [ math.pi * (7.0 / 4),
-                                 math.pi * (1.0 / 4),
-                                 math.pi * (2.0 / 4),
-                                 math.pi * (-2.0 / 4)])
-    #time.sleep(2)
-    print s.setComponentState('head',
-                               [ math.pi * (-7.0 / 4),
-                                 math.pi * (-1.0 / 4),
-                                 math.pi * (2.0 / 4),
-                                 math.pi * (-2.0 / 4)])
-    #time.sleep(2)
-    # print s.setComponentState('tray', {'component':'head', 'position':'', 'jointPositions':[4.0, 1.0, 0.0, 0.0]})
-    # time.sleep(2)
-    print s.setComponentState('head', 'home')
-    print s.setLight([0,0,0])
+    #print "Head home " + s.setComponentState('head', 'home')
+    print "Head back " + s.setComponentState('head',
+                               [ math.radians(90),
+                                 math.radians(45),
+                                 math.radians(90),
+                                 math.radians(-90)])
+    #print s.setComponentState('base', [0,0, math.radians(-15)])
+    print "Head back " + s.setComponentState('head',
+                               [ math.radians(-90),
+                                 math.radians(-45),
+                                 math.radians(90),
+                                 math.radians(-90)])
+    #print s.setComponentState('base', [0,0, math.radians(15)])
+    print "Head home " + s.setComponentState('head', 'home')
+    print "Light green"
+    s.setLight([0,1,0])
+
+    print "Tray open " + s.setComponentState('tray', 'open')
+    print "Tray close " + s.setComponentState('tray', [0])
+    print "Light off"
+    s.setLight([0,0,0])
     
