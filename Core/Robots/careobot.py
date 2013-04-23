@@ -4,11 +4,12 @@ import robot
 import rosHelper
 from exceptions import StopIteration
 
-class CareOBot(object):
+class CareOBot(robot.Robot):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name='Care-O-Bot 3.2'):
-        super(CareOBot, self).__init__(name, ActionLib(), 'script_server', '/stereo/right/image_color/compressed')
+        #super(CareOBot, self).__init__(name, ActionLib(), 'script_server', '/stereo/right/image_color/compressed')
+        super(CareOBot, self).__init__(name, ScriptServer(), 'script_server', '/stereo/right/image_color/compressed')
                 
     def getCameraAngle(self):
         cameraState = self.getComponentState('head', True)
@@ -18,12 +19,12 @@ class CareOBot(object):
             
         return angle
         
-    def setComponentState(self, name, value):
+    def setComponentState(self, name, value, blocking=True):
         #check if the component has been initialised, and init if it hasn't
         if len(self._ros.getTopics('/%(name)s_controller' % { 'name': name })) == 0:
             self._robInt.initComponent(name)
         
-        return super(CareOBot, self).setComponentState(name, value)
+        return super(CareOBot, self).setComponentState(name, value, blocking)
     
     def resolveComponentState(self, componentName, state, tolerance=0.10):
         if state == None:
@@ -65,7 +66,7 @@ class ScriptServer(object):
 
     def __init__(self):
         self._ros = rosHelper.ROS()
-        self._ros.configureROS(packageName='simple_script_server')
+        self._ros.configureROS(packageName='cob_script_server')
         import simple_script_server
         self._ros.initROS()
         self._ss = simple_script_server.simple_script_server()

@@ -9,7 +9,7 @@ if __name__ == '__main__':
     #c.setComponentState('base', [4.35,1,-0.4])
     #c.setComponentState('base', [4.35,1,0.4])
     #c.setComponentState('base', [4.35,1,0])
-    c.setComponentState('head', 'front')
+    c.setComponentState('head', 'front', False)
     c.setComponentState('torso', 'left')
     c.setComponentState('torso', 'right')
     c.setComponentState('torso', 'front')

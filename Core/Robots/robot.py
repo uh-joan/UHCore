@@ -119,8 +119,8 @@ class Robot(object):
     def setLight(self, colour):
         self._robInt.runComponent('light', colour)
 
-    def setComponentState(self, name, value):
-        status = self._robInt.runComponent(name, value)
+    def setComponentState(self, name, value, blocking=True):
+        status = self._robInt.runComponent(name, value, None, blocking)
         #There is a bug in the Gazebo COB interface that prevents proper trajectory tracking
         #this causes most status messages to come back as aborted while the operation is still
         #commencing, time delay to attempt to compensate...
