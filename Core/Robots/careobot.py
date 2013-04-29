@@ -12,9 +12,10 @@ class CareOBot(robot.Robot):
         super(CareOBot, self).__init__(name, ScriptServer(), 'script_server', '/stereo/right/image_color/compressed')
                 
     def getCameraAngle(self):
-        cameraState = self.getComponentState('head', True)
+        (_, cameraState) = self.getComponentState('head', True)
         
-        angle = round(math.degrees(cameraState.actual.positions[0]), 2)
+        pos = cameraState['positions'][0]
+        angle = round(math.degrees(pos), 2)
         angle = angle % 360
             
         return angle
@@ -26,42 +27,6 @@ class CareOBot(robot.Robot):
         
         return super(CareOBot, self).setComponentState(name, value, blocking)
     
-    def resolveComponentState(self, componentName, state, tolerance=0.10):
-        if state == None:
-            return (None, None)
-        
-        curPos = state.actual.positions
-
-        positions = self.getComponentPositions(componentName)
-
-        if len(positions) == 0:
-            return ('', curPos)
-
-        name = None
-        diff = None
-        for positionName in positions:
-            positionValue = self.getValue(positions[positionName])
-            if type(positionValue) is not list:
-                #we don't currently handle nested types
-                continue
-
-            if len(positionValue) != len(curPos):
-                #raise Exception("Arguement lengths don't match")
-                continue
-            
-            dist = 0
-            for index in range(len(positionValue)):
-                dist += math.pow(curPos[index] - positionValue[index], 2)
-            dist = math.sqrt(dist)
-            if name == None or dist < diff:
-                name = positionName
-                diff = dist
-                        
-        if diff <= tolerance:
-            return (name, curPos)
-        else:
-            return ('', curPos)    
-
 class ScriptServer(object):
 
     def __init__(self):

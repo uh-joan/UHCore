@@ -10,7 +10,7 @@ class MapImage(object):
     exposed = True
     
     def __init__(self):
-        self._robotName = CareOBot().name
+        self._robotName = 'COB3-2'
         self._dao = DataAccess()
         self._sr = StateResolver()
         
