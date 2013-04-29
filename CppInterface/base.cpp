@@ -51,12 +51,16 @@ PyObject* PythonInterface::getClassInstance() {
 		Py_DECREF(pDict);
 
 		PyObject *pClassArgs = getConstructorArgs();
+		if(pClassArgs != NULL && !PyTuple_Check(pClassArgs))
+		{
+			PyObject *temp = pClassArgs;
+			pClassArgs = PyTuple_Pack(1, temp);
+			Py_DECREF(temp);
+		}
 
 		pInstance = PyObject_CallObject(pClass, pClassArgs);
 		Py_DECREF(pClass);
-		if (pClassArgs != NULL) {
-			Py_DECREF(pClassArgs);
-		}
+		Py_XDECREF(pClassArgs);
 	}
 
 	return pInstance;

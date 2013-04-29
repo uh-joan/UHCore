@@ -10,10 +10,10 @@ using namespace std;
 int main(int argc, char *argv[]) {
 
 	std::string modulePath = "/home/nathan/git/UHCore/Core";
-	ActionHistory *hist = new ActionHistory(modulePath);
-	std::string ruleName = "testPythonInterface";
-	std::cout << hist->addHistory(ruleName) << '\n';
-	hist->addHistoryAsync(ruleName);
+	//ActionHistory *hist = new ActionHistory(modulePath);
+	//std::string ruleName = "testPythonInterface";
+	//std::cout << hist->addHistory(ruleName) << '\n';
+	//hist->addHistoryAsync(ruleName);
 
 	std::string robotName = "Sunflower";
 	Robot *rob = new Robot(modulePath, robotName, Robot::Sunflower);

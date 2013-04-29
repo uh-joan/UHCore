@@ -361,7 +361,7 @@ class ActionHistory(object):
         return historyId
 
     def saveHistoryImage(self, historyId, imageBytes, imageType):
-        imageId = self.saveBinary('Image for history %s' % (historyId), imageBytes, imageType)
+        imageId = Binary().saveBinary('Image for history %s' % (historyId), imageBytes, imageType)
         sql = "UPDATE `%s`" % (self._historyTable)
         sql += " SET `imageId` = %(imgid)s WHERE `actionHistoryId` = %(histid)s" 
         args = {

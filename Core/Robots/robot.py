@@ -132,12 +132,13 @@ class Robot(object):
         return self._ros._states[status]
         
     def getComponentPositions(self, componentName):
-        try:
-            self._ros.configureROS(packageName='rospy')
-            import rospy
-            return rospy.get_param('%s/%s' % (self._serverTopic, componentName))
-        except:
-            return []
+        return []
+#        try:
+#            self._ros.configureROS(packageName='rospy')
+#            import rospy
+#            return rospy.get_param('%s/%s' % (self._serverTopic, componentName))
+#        except:
+#            return []
 
     def getComponents(self):
         try:

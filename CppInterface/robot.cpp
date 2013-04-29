@@ -37,23 +37,24 @@ PyObject* Robot::getConstructorArgs() {
 }
 
 std::string Robot::setLight(int color[]) {
+
 	char* m = strdup("setLight");
 	char* f = strdup("([i,i,i])");
-	//PyObject *pArgs = PyList_New(3);
-	//PyList_SetItem(pArgs, 0, PyInt_FromLong(color[0]));
-	//PyList_SetItem(pArgs, 1, PyInt_FromLong(color[1]));
-	//PyList_SetItem(pArgs, 2, PyInt_FromLong(color[2]));
+	PyObject *pArgs = PyList_New(3);
+	PyList_SetItem(pArgs, 0, PyInt_FromLong(color[0]));
+	PyList_SetItem(pArgs, 1, PyInt_FromLong(color[1]));
+	PyList_SetItem(pArgs, 2, PyInt_FromLong(color[2]));
 
-	PyObject *pValue = PyObject_CallMethod(getClassInstance(), m, f, color);
-	//Py_DECREF(pArgs);
+	PyObject *pValue = PyObject_CallMethod(getClassInstance(), m, f, pArgs);
+	Py_DECREF(pArgs);
 
 	if (pValue != NULL) {
 		char* ret = PyString_AsString(pValue);
 		Py_DECREF(pValue);
-		return ret;
+		return "Set";
 	} else {
 		std::cout << "Error while calling method" << '\n';
 		PyErr_Print();
-		return NULL;
+		return "Err";
 	}
 }
