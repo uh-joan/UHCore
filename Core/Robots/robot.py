@@ -99,20 +99,17 @@ class Robot(object):
     def executeFunction(self, funcName, kwargs):
         return self._robInt.runFunction(funcName, kwargs)
     
-    def getLocation(self, raw=False):
+    def getLocation(self, dontResolveName=False):
         p = self._pose
         ((x, y, _), rxy) = p.getRobotPose()
         if x == None or y == None:
-            if raw:
-                return (None, None, None)
-            else:
-                return (None, (None, None, None))
+            return ('', (None, None, None))
         
         angle = round(math.degrees(rxy))
         pos = (round(x, 3), round(y, 3), angle)
         
-        if raw:
-            return pos
+        if dontResolveName:
+            return ('', pos)
         else:
             return Data.dataAccess.Locations.resolveLocation(pos)
 
@@ -132,12 +129,13 @@ class Robot(object):
         return self._ros._states[status]
         
     def getComponentPositions(self, componentName):
-        try:
-            self._ros.configureROS(packageName='rospy')
-            import rospy
-            return rospy.get_param('%s/%s' % (self._serverTopic, componentName))
-        except:
-            return []
+        return []
+#        try:
+#            self._ros.configureROS(packageName='rospy')
+#            import rospy
+#            return rospy.get_param('%s/%s' % (self._serverTopic, componentName))
+#        except:
+#            return []
 
     def getComponents(self):
         try:
@@ -147,22 +145,65 @@ class Robot(object):
         except:
             return []
         
-    def getComponentState(self, componentName, raw=False):
+    def getComponentState(self, componentName, dontResolveName=False):
         topic = '/%(name)s_controller/state' % { 'name': componentName }
         state = self._ros.getSingleMessage(topic)
         
-        if raw:
-            return state
+        try:
+            ret = {'name': componentName, 'positions': state.actual.positions, 'goals': state.desired.positions, 'joints': state.joint_names }
+        except: 
+            ret = {'name': componentName, 'positions': (), 'goals': (), 'joints': () }
+            
+        if dontResolveName:
+            return ('', ret)
         else:
-            return self.resolveComponentState(componentName, state)
+            return self.resolveComponentState(componentName, ret)
     
     def resolveComponentState(self, componentName, state, tolerance=0.10):
+        if state == None:
+            return (None, None)
+        
+        curPos = state['positions']
+
+        positions = self.getComponentPositions(componentName)
+
+        if len(positions) == 0:
+            return ('', state)
+
+        name = None
+        diff = None
+        for positionName in positions:
+            positionValue = self._getValue(positions[positionName])
+            if type(positionValue) is not list:
+                #we don't currently handle nested types
+                continue
+
+            if len(positionValue) != len(curPos):
+                #raise Exception("Arguement lengths don't match")
+                continue
+            
+            dist = 0
+            for index in range(len(positionValue)):
+                dist += math.pow(curPos[index] - positionValue[index], 2)
+            dist = math.sqrt(dist)
+            if name == None or dist < diff:
+                name = positionName
+                diff = dist
+                        
+        if diff <= tolerance:
+            return (name, state)
+        else:
             return ('', state)
     
-    def getValue(self, val):
+    def _getValue(self, val):
         if type(val) is list:
             ret = val[0]
         else:
             ret = val
         
         return ret
+
+if __name__ == "__main__":
+    import careobot
+    c = careobot.CareOBot()
+    print c.getComponents()
