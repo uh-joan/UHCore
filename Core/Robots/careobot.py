@@ -158,18 +158,14 @@ class PoseUpdater(robot.PoseUpdater):
     def updateTray(self, robot):
         (name, _) = robot.getComponentState('tray')
 
-        trayIsRaised = None
-        trayIsLowered = None
+        trayPosition = None
         trayIsEmpty = None
         if name == 'up':
-            trayIsRaised = 'up'
+            trayPosition = 'raised'
+        elif name == 'down':
+            trayPosition = 'lowered'
         else:
-            trayIsRaised = ''
-            
-        if name == 'down':
-            trayIsLowered = 'down'
-        else:
-            trayIsLowered = ''
+            trayPosition = 'inProgress'
             
         range0 = self._ros.getSingleMessage(topic='/range_0', timeout=0.25)
         range1 = self._ros.getSingleMessage(topic='/range_0', timeout=0.25)
@@ -178,18 +174,16 @@ class PoseUpdater(robot.PoseUpdater):
         if range0 != None and range1 != None and range2 != None and range3 != None:
             threshold = 0.2
             if range0.range < threshold or range1.range < threshold or range2.range < threshold or range3.range < threshold:
-                trayIsEmpty = 'full'
-                
+                trayIsEmpty = 'full'                
             else:
                 trayIsEmpty = 'empty'
         else:
-            trayIsEmpty = None
+            trayIsEmpty = 'unknown'
             print "Phidget sensors not ready before timeout"
 
         _states = {
-                   'trayIsRaised': (trayIsRaised == 'up', trayIsRaised),
-                   'trayIsLowered': (trayIsLowered == 'down', trayIsLowered),
-                   'trayIsEmpty': (trayIsEmpty == 'empty', trayIsEmpty) }
+                   'trayStatus': (trayPosition, trayPosition),
+                   'trayIs': (trayIsEmpty, trayPosition) }
 
         for key, value in _states.items():
             if value[1] != None:

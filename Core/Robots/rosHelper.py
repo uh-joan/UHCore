@@ -236,7 +236,7 @@ class RosSubscriber(object):
             self.unregister()
 
 class Transform(object):
-    def __init__(self, rosHelper=None):
+    def __init__(self, rosHelper=None, fromTopic=None, toTopic=None):
         if(rosHelper == None):
             self._ros = ROS()
         else:
@@ -247,8 +247,15 @@ class Transform(object):
         self._tf = tf
         self._ros.initROS()
         self._listener = None
+        self._defaultFrom = fromTopic
+        self._defaultTo = toTopic
     
-    def getTransform(self, toTopic, fromTopic):
+    def getTransform(self, fromTopic=None, toTopic=None):
+        if fromTopic == None:
+            fromTopic = self._defaultFrom
+        if toTopic == None:
+            toTopic = self._defaultTo
+        
         """
         Waits for the /base_footprint to /map transform to be availalble and 
         returns two tuples: (x, y, z) and a quaternion ( rx, ry, rz, rxy)
