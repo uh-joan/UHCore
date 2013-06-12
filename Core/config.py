@@ -3,13 +3,13 @@ server_config = {
   # Point your web browser to http://localhost:<http_port>
   # must be above 104 to avoid root privilage!!
 
-  'http_port':       1054,
+  'http_port':       1055,
 
   # The settings for the channel logging MySQL server / database / table
   'mysql_log_server':   'rh-database',
   'mysql_log_user':     'rhUser',
   'mysql_log_password': 'waterloo',
-  'mysql_log_db':       'Accompany',
+  'mysql_log_db':       'Accompany2',
   'mysql_log_table':    'SensorLog',
   
   'mysql_history_table':'ActionHistory',
@@ -51,3 +51,4 @@ ros_config = {
 siena_config = {
     'likelihood': 0.1
 }
+

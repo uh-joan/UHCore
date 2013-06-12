@@ -57,7 +57,7 @@ class Robot(object):
         if self._tf == None:
             self._tf = rosHelper.Transform(toTopic='/map', fromTopic='/base_footprint')
         return self._tf
-    
+        
     @property
     def _ros(self):
         if self._rs == None:
@@ -100,8 +100,7 @@ class Robot(object):
         return self._robInt.runFunction(funcName, kwargs)
     
     def getLocation(self, dontResolveName=False):
-        p = self._pose
-        ((x, y, _), rxy) = p.getRobotPose()
+        ((x, y, _), rxy) = self._transform.getTransform()
         if x == None or y == None:
             return ('', (None, None, None))
         
@@ -122,7 +121,7 @@ class Robot(object):
         #this causes most status messages to come back as aborted while the operation is still
         #commencing, time delay to attempt to compensate...
         if status != 3 and len(self._ros.getTopics('/gazebo')) > 0:
-            time.sleep(5)
+            time.sleep(1)
             print >> sys.stderr, 'Gazebo hack: state ' + self._rs._states[status] + ' changed to state ' + self._rs._states[3]
             return self._ros._states[3]
         

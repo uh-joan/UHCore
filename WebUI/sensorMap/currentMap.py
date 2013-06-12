@@ -4,13 +4,13 @@ from cherrypy.lib import file_generator
 from SensorMap.processor import MapProcessor
 from Data.dataAccess import DataAccess
 from Data.sensors import StateResolver
-from Robots.careobot import CareOBot
 
 class MapImage(object):
     exposed = True
     
     def __init__(self):
-        self._robotName = 'COB3-2'
+        #TODO: Handle multiple robots
+        self._robotName = 'Care-O-Bot 3.2'
         self._dao = DataAccess()
         self._sr = StateResolver()
         
