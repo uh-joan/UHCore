@@ -47,3 +47,7 @@ ros_config = {
                  'ROBOT':'cob3-2'
                  }
     }
+
+siena_config = {
+    'likelihood': 0.1
+}
