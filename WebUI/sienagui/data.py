@@ -1,6 +1,6 @@
 from Data.dataAccess import DataAccess
 from config import siena_config
-import json, cherrypy
+import json
 
 class Login(object):
     exposed = True
@@ -10,10 +10,10 @@ class Login(object):
         
     def GET(self, unick=''):
 
-        sql= 'SELECT userId, languageId FROM Users WHERE nickname=%(nickname)'
+        sql= 'SELECT userId, languageId FROM Users WHERE nickname=%(nickname)s'
         args = {'nickname': unick}
 
-        result = self._dao.sql().getSingle(sql, args, {'userId':-1, 'languageId': -1})
+        result = self._dao.sql.getSingle(sql, args, {'userId':-1, 'languageId': -1})
         
         ret = "%(userId)s,%(languageId)s" % result
         return ret
@@ -26,11 +26,19 @@ class Options(object):
         
     def GET(self, ulang='-1', pid='-1'):
 
-        sql= "SELECT idActionPossibilityOptions AS id, OptionName AS name, PossibleValues AS 'values', DefaultValue AS default FROM \
-              Accompany.ActionPossibilityOptions WHERE idActionPossibilityOptions IN (SELECT idOpt FROM ActionPossibility_APOptions WHERE idAP=$(sonid)s)"
+        sql="SELECT \
+                a.idActionPossibilityOptions AS id, \
+                a.OptionName AS name, \
+                a.PossibleValues AS 'values', \
+                a.DefaultValue AS 'default' \
+            FROM \
+                ActionPossibilityOptions a INNER JOIN\
+                ActionPossibility_APOptions o ON a.idActionPossibilityOptions = o.idOpt \
+            WHERE \
+                o.idAP = %(sonid)s"
         args = {'sonid': pid }
 
-        results = self._dao.sql().getData(sql, args)
+        results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
 
 class Command(object):
@@ -41,13 +49,11 @@ class Command(object):
         
     def GET(self, cmd_id='-1'):
 
-        sql = "UPDATE Sensors SET value='1' WHERE sensorId=%(cmd)s"
+        sql = "UPDATE `Sensors` SET `value`='1' WHERE `sensorId`=%(cmd)s"
         args = {'cmd': cmd_id }
 
-        if self._dao.sql().saveData(sql, args) > 0:
-            return "OK"
-        else:
-            raise cherrypy.HTTPError(500)
+        self._dao.sql.saveData(sql, args)
+        return "OK"
         
 class ExpressionRequest(object):
     exposed = True
@@ -59,7 +65,7 @@ class ExpressionRequest(object):
 
         sql="SELECT expression FROM GUIexpression WHERE ison='1' limit 1;"
 
-        result = self._dao.sql().getSingle(sql)
+        result = self._dao.sql.getSingle(sql)
         if result == None:
             return "error"
         else:
@@ -81,7 +87,7 @@ class FullActionList(object):
              a.apTypeId = ActionPossibilityType.apTypeId AND parentId IS null AND Locations.locationId = a.locationId AND a.likelihood > %(threshold)s ) AS pinco"
         args = {'threshold': self._likelihood }
 
-        results = self._dao.sql().getData(sql, args)
+        results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
 
 class RobotActions(object):
@@ -101,7 +107,7 @@ class RobotActions(object):
         
         args = {'threshold': self._likelihood, 'lang': ulang }
 
-        results = self._dao.sql().getData(sql, args)
+        results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
 
 class SonsActions(object):
@@ -115,13 +121,13 @@ class SonsActions(object):
 
         sql="SELECT label_text, phrase, type_description, precondId, likelihood, apId FROM \
              (SELECT (SELECT message FROM Messages WHERE messageId=a.ap_text and languageId=%(lang)s) AS label_text, \
-             ActionPossibilityType.text AS type_description,a.parentId,a.apId AS apId,(SELECT message FROM Messages where messageId=a.ap_phrase AND languageId=1) AS phrase, \
+             ActionPossibilityType.text AS type_description,a.parentId,a.apId AS apId,(SELECT message FROM Messages where messageId=a.ap_phrase AND languageId=%(lang)s) AS phrase, \
              a.likelihood, a.precondId FROM ActionPossibilities a, ActionPossibilityType WHERE \
-             a.apTypeId = ActionPossibilityType.apTypeId AND parentId = %(parent)s AND a.likelihood > %(thresholds)s AS pinco"
+             a.apTypeId = ActionPossibilityType.apTypeId AND parentId = %(parent)s AND a.likelihood > %(threshold)s) AS pinco"
         
         args = {'threshold': self._likelihood, 'lang': ulang, 'parent': pid }
 
-        results = self._dao.sql().getData(sql, args)
+        results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
 
 class UserActions(object):
@@ -141,7 +147,7 @@ class UserActions(object):
         
         args = {'threshold': self._likelihood, 'lang': ulang, 'user': uid }
 
-        results = self._dao.sql().getData(sql, args)
+        results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
 
 class SetParameter(object):
@@ -152,10 +158,8 @@ class SetParameter(object):
         
     def GET(self, opt_id='-1', val='-1'):
 
-        sql = 'UPDATE Accompany.ActionPossibilityOptions SET SelectedValue=%(value)s WHERE idActionPossibilityOptions=%(optId)s'
+        sql = 'UPDATE ActionPossibilityOptions SET SelectedValue=%(value)s WHERE idActionPossibilityOptions=%(optId)s'
         args = {'value': val, 'optId': opt_id }
 
-        if self._dao.sql().saveData(sql, args) > 0:
-            return "OK"
-        else:
-            raise cherrypy.HTTPError(500)
+        self._dao.sql.saveData(sql, args)
+        return "OK"

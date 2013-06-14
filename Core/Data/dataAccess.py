@@ -644,9 +644,10 @@ class SQLDao(object):
             try:
                 self._conn = MySQLdb.connect(self._host, self._user, self._pass, self._db)
             except Exception as e:
-                #TODO: Need to protect this against infinite recursion
                 print >> sys.stderr, e
-                if retry > 0:
+                
+                #Access denied error == 1044, no reason to retry
+                if e.args[0] != 1044 and retry > 0:
                     return self._getCursor(retry-1)
                 else:
                     raise e

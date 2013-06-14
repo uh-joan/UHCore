@@ -12,26 +12,29 @@ class Current(object):
         sql="SELECT value FROM Sensors WHERE sensorId=%(sid)s"
         args = {'sid': 999 }
         
-        result = self._dao.sql().getSingle(sql, args)
+        result = self._dao.sql.getSingle(sql, args)
         
         if result == None:
             return "error"
         else:
-            a=result['value']
+            value=result['value']
             sql="SELECT actionName FROM RobotActionsHistory ORDER BY timestamp DESC LIMIT 1;"
-            result = self._dao.sql().getSingle(sql)
+            result = self._dao.sql.getSingle(sql)
             if result == None:
                 return "error"
             else:
-                a+=result['actionName']
-                return a
-
+                return "%s,%s" % (value, result['actionName'])
 
 class Next(object):
+    exposed = True
+    
+    def __init__(self):
+        self._dao = DataAccess()
+        
     def POST(self, current='-1',task=''):
         status = current
         start_status=current
-        start_task=task        
+        start_task=task.strip()
         count = 60  #rough timeout of about 15sec --> if nothing changes in 15 sec the response will be empty
         
         #Do...while pattern, exit condition at the bottom
@@ -39,7 +42,7 @@ class Next(object):
             sql="SELECT value FROM Sensors WHERE sensorId=%(sid)s"
             args = {'sid': 999 }
             
-            result = self._dao.sql().getSingle(sql, args)
+            result = self._dao.sql.getSingle(sql, args)
             
             if result == None:
                 print 'Problem! rowcount=0'
@@ -48,7 +51,7 @@ class Next(object):
             status=str(result['value'])
     
             sql="SELECT actionName FROM RobotActionsHistory ORDER BY timestamp DESC LIMIT 1;"
-            result = self._dao.sql().getSingle(sql)
+            result = self._dao.sql.getSingle(sql)
             if result == None:
                 return "error"
             else:

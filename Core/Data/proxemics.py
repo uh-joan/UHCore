@@ -10,7 +10,7 @@ class ProxemicMover(object):
         import tf
         import accompany_context_aware_planner.GetPotentialProxemicsLocations
         self._rospy = rospy
-        self._tf = tf        
+        self._tf = tf
     
     def gotoTarget(self, user, posture, x, y, theta):
         if self._robot == None:
