@@ -1,3 +1,8 @@
+#Add project reference
+import sys, os
+path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
+sys.path.append(path)
+
 import io, math, time, sys
 from PIL import Image
 from extensions import PollingProcessor
@@ -203,6 +208,6 @@ class Robot(object):
         return ret
 
 if __name__ == "__main__":
-    import careobot
-    c = careobot.CareOBot()
+    from robotFactory import Factory
+    c = Factory.getCurrentRobot()
     print c.getComponents()

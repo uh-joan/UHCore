@@ -97,15 +97,15 @@ class RobotActions(object):
         self._dao = DataAccess()
         self._likelihood = siena_config['likelihood']
         
-    def GET(self, ulang='-1'):
+    def GET(self, ulang='1', robot='Care-O-Bot 3.6'):
 
         sql="SELECT label_text, phrase, type_description, likelihood, apId, precondId FROM \
-             (SELECT (SELECT message FROM Messages WHERE messageId=a.ap_text and languageId=1) AS label_text, \
+             (SELECT (SELECT message FROM Messages WHERE messageId=a.ap_text and languageId=%(lang)s) AS label_text, \
              ActionPossibilityType.text AS type_description,a.parentId,a.apId AS apId,(Select message FROM Messages WHERE messageId=a.ap_phrase AND languageId=%(lang)s) AS phrase, \
              a.likelihood, a.precondId from ActionPossibilities a, ActionPossibilityType, Locations WHERE \
-             a.apTypeId = ActionPossibilityType.apTypeId AND parentId IS null AND Locations.locationId = a.locationId AND Locations.locationId=(SELECT locationId FROM Robot WHERE robotName='simulated') AND a.likelihood > %(threshold)s ) AS pinco ORDER BY likelihood DESC"
+             a.apTypeId = ActionPossibilityType.apTypeId AND parentId IS null AND Locations.locationId = a.locationId AND Locations.locationId=(SELECT locationId FROM Robot WHERE robotName=%(robot)s) AND a.likelihood > %(threshold)s ) AS pinco ORDER BY likelihood DESC"
         
-        args = {'threshold': self._likelihood, 'lang': ulang }
+        args = {'threshold': self._likelihood, 'lang': ulang, 'robot': robot }
 
         results = self._dao.sql.getData(sql, args)
         return json.dumps(results)

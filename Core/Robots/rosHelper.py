@@ -1,6 +1,9 @@
 import time, os, sys
 from subprocess import Popen, PIPE
 from config import ros_config
+from threading import Lock
+
+_threadLock = Lock()
 
 class ROS(object):
     _envVars = {}    
@@ -29,11 +32,11 @@ class ROS(object):
             sub.unregister()
         
     def initROS(self, name='rosHelper'):
-        if not self._rospy.core.is_initialized():
-            self._rospy.init_node('rosHelper', anonymous=True, disable_signals=True)
+        with _threadLock:
+            if not self._rospy.core.is_initialized():
+                self._rospy.init_node('rosHelper', anonymous=True, disable_signals=True)
         
     def getSingleMessage(self, topic, dataType=None, retryOnFailure=1, timeout=None):
-        
         try:
             if dataType == None:
                 if not self._topicTypes.has_key(topic):
@@ -60,7 +63,7 @@ class ROS(object):
             else:
                 return None
     
-    def getTopics(self, baseFilter='', exactMatch=False):
+    def getTopics(self, baseFilter='', exactMatch=False, retry=10):
         # topics = self._rospy.get_published_topics(baseFilter)
         # if len(topics) == 0 and baseFilter.strip('/').find('/') == -1:
         
@@ -73,7 +76,9 @@ class ROS(object):
         # but head_controller/state does not
         # in this case, get all of them and loop through
         topics = []
-        allTopics = self._rospy.get_published_topics()
+        with _threadLock:
+            allTopics = self._rospy.get_published_topics()
+        
         if baseFilter.startswith('/'):
             baseFilter = baseFilter[1:]
         for t in allTopics:
@@ -222,7 +227,8 @@ class RosSubscriber(object):
     def _touch(self):
         self._lastAccess = time.time()
         if self._subscriber == None:
-            self._subscriber = self._rospy.Subscriber(self._topic, self._dataType, self._callback)
+            with _threadLock:
+                self._subscriber = self._rospy.Subscriber(self._topic, self._dataType, self._callback)
     
     def unregister(self):
         if self._subscriber != None:
@@ -267,13 +273,14 @@ class Transform(object):
                 self._listener = self._tf.TransformListener()
 
             # Wait for tf to get the frames
-            now = self._rospy.Time(0)
-            try:
-                self._listener.waitForTransform(toTopic, fromTopic, now, self._rospy.Duration(1.0))
-            except self._tf.Exception as e:
-                #if str(e) != 'Unable to lookup transform, cache is empty, when looking up transform from frame [' + baseTopic + '] to frame [' + mapTopic + ']':
-                print >> sys.stderr, "Error while waiting for transform: " + str(e)
-                return ((None, None, None), None)
+            with _threadLock:
+                now = self._rospy.Time(0)
+                try:
+                    self._listener.waitForTransform(toTopic, fromTopic, now, self._rospy.Duration(1.0))
+                except self._tf.Exception as e:
+                    #if str(e) != 'Unable to lookup transform, cache is empty, when looking up transform from frame [' + baseTopic + '] to frame [' + mapTopic + ']':
+                    print >> sys.stderr, "Error while waiting for transform: " + str(e)
+                    return ((None, None, None), None)
             
             try:
                 (xyPos, heading) = self._listener.lookupTransform(toTopic, fromTopic, now)

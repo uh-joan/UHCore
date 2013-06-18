@@ -10,7 +10,7 @@ class Current(object):
     def POST(self):
         
         sql="SELECT value FROM Sensors WHERE sensorId=%(sid)s"
-        args = {'sid': 999 }
+        args = {'sid': 1001 }
         
         result = self._dao.sql.getSingle(sql, args)
         
@@ -40,7 +40,7 @@ class Next(object):
         #Do...while pattern, exit condition at the bottom
         while True:
             sql="SELECT value FROM Sensors WHERE sensorId=%(sid)s"
-            args = {'sid': 999 }
+            args = {'sid': 1001 }
             
             result = self._dao.sql.getSingle(sql, args)
             

@@ -1,5 +1,6 @@
 from Data.dataAccess import DataAccess
 from extensions import PollingProcessor
+from Robots.robot import Robot
 import math
 
 class LocationProcessor(PollingProcessor):
@@ -55,8 +56,8 @@ class RobotLocationProcessor(LocationProcessor):
     def __init__(self, robot=None):
         super(RobotLocationProcessor, self).__init__()
         if robot == None:
-            from Robots.careobot import CareOBot
-            self._robot = CareOBot()
+            from Robots.robotFactory import Factory
+            self._robot = Factory.getCurrentRobot()
         else:
             self._robot = robot
 
@@ -70,19 +71,7 @@ class RobotLocationProcessor(LocationProcessor):
 class HumanLocationProcessor(LocationProcessor):
     
     def __init__(self, robot=None):
-        super(HumanLocationProcessor, self).__init__()
-        if robot == None:
-            from Robots.careobot import CareOBot
-            self._robot = CareOBot()
-        else:
-            self._robot = robot
-
-        robId = self._dao.getRobotByName(self._robot.name)['robotId']
-        self._targetName = self._robot.name
-        self._storedLoc = lambda: self._dao.getRobot(robId)
-        self._curLoc = lambda: self._robot.getLocation(False)
-        
-        self._updateLoc = lambda locid, x, y, orientation: self._dao.saveRobotLocation(robId, locid, x, y, orientation)
+        pass
 
 
 if __name__ == '__main__':

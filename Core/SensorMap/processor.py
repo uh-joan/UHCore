@@ -8,7 +8,7 @@ class MapProcessor(object):
     _mapLock = RLock()
     _iconLock = RLock()
 
-    def __init__(self, baseMap='RobotHouseMap.svg'):
+    def __init__(self, baseMap):
         self._root = os.path.dirname(os.path.realpath(__file__))
         self._baseFile = os.path.join(self._root, baseMap)
         self._sensorTypes = et.parse(os.path.join(self._root, 'type_icons.xml'))

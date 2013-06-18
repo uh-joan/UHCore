@@ -36,5 +36,6 @@ listRoot.setLinks((
               ('liveMap', sensorMap)))
 
 root.sienagui = sienagui.root
+#root = sienagui.root
 
 cherrypy.quickstart(root, '/', conf)

@@ -7,9 +7,10 @@ from exceptions import StopIteration
 class CareOBot(robot.Robot):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
-    def __init__(self, name='Care-O-Bot 3.2'):
-        #super(CareOBot, self).__init__(name, ActionLib(), 'script_server', '/stereo/right/image_color/compressed')
-        super(CareOBot, self).__init__(name, ScriptServer(), 'script_server', '/stereo/right/image_color/compressed')
+    def __init__(self, name, rosMaster):
+        rosHelper.ROS.configureROS(rosMaster = rosMaster)
+        super(CareOBot, self).__init__(name, ActionLib(), 'script_server', '/stereo/right/image_color/compressed')
+        #super(CareOBot, self).__init__(name, ScriptServer(), 'script_server', '/stereo/right/image_color/compressed')
                 
     def getCameraAngle(self):
         (_, cameraState) = self.getComponentState('head', True)
@@ -147,9 +148,7 @@ class ActionLib(object):
         return status
 
 class PoseUpdater(robot.PoseUpdater):
-    def __init__(self, robot=None):
-        if robot == None:
-            robot = CareOBot()
+    def __init__(self, robot):
         super(PoseUpdater, self).__init__(robot)
     
     def checkUpdatePose(self, robot):
@@ -177,9 +176,13 @@ class PoseUpdater(robot.PoseUpdater):
                 trayIsEmpty = 'full'                
             else:
                 trayIsEmpty = 'empty'
+            if self._warned.has_key('phidget'):
+                self._warned.remove('phidget')
         else:
             trayIsEmpty = 'unknown'
-            print "Phidget sensors not ready before timeout"
+            if 'phidget' not in self._warned: 
+                self._warned.append('phidget')
+                print "Phidget sensors not ready before timeout"
 
         _states = {
                    'trayStatus': (trayPosition, trayPosition),
@@ -189,6 +192,8 @@ class PoseUpdater(robot.PoseUpdater):
             if value[1] != None:
                 try:                           
                     sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
+                    if self._warned.has_key(key):
+                        self._warned.remove(key)
                 except StopIteration:
                     if key not in self._warned:
                         print >> sys.stderr, "Warning: Unable to locate sensor record for %s sensor %s." % (self._robot.name, key)
@@ -204,7 +209,8 @@ class PoseUpdater(robot.PoseUpdater):
                                          'status': value[1] }
                 
 if __name__ == '__main__':
-    robot = CareOBot()
+    from robotFactory import Factory
+    robot = Factory.getCurrentRobot()
     """
     frequency=math.pi*2/100
     phase1=2
@@ -213,7 +219,7 @@ if __name__ == '__main__':
     center=128
     width=127
     l=50
-    robot = CareOBot()
+    robot = CareOBot('Care-O-Bot 3.2', 'http://cob3-2-pc1:11311')
     while True:
         for i in range(0, l):
             red = (math.sin(frequency*i + phase1) * width + center) / 255
@@ -242,4 +248,3 @@ if __name__ == '__main__':
 
     sr.stop()
     rp.stop()
-    

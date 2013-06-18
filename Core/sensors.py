@@ -1,9 +1,165 @@
 import sys
 from socket import AF_INET, SOCK_DGRAM, socket, timeout
-from Data.dataAccess import SQLDao, Sensors
+from Data.dataAccess import SQLDao, Sensors, Locations
 from Data.sensors import StateResolver
+import json, urllib2
 
 from extensions import PollingProcessor
+
+
+################################################################################
+#
+# ZWave thread
+#
+# Listens to the ZigBee gateway's UDP broadcast messages, transforms the
+# channel values according to the specified sensor kind and puts them in
+# the channel array.
+#
+################################################################################
+class ZWave(PollingProcessor):
+
+	# Initialisation method
+	# Opens the configured UDP socket for the receipt of broadcast messages.
+	def __init__ (self, ipAddress, port):
+		super(ZWave, self).__init__()
+		
+		self._loadTime = None
+		self._dataVersion = None
+		self._baseUrl = "http://%(ip)s:%(port)s/data_request?id=lu_sdata&timeout=%(timeout)s" % {'ip': ipAddress, 'port': port, 'timeout': 60}
+
+		# Place for the callback methods to store "static" values.
+		# Currently only needed for the Moving Average Filter for the MCP9700
+		# temperature sensor temperature calculations.
+		self._handler_memory = {}
+		self._channels = {}
+		self._sr = StateResolver()
+		self._sensorDao = Sensors()
+		self._sensors = self._sensorDao.findSensors()
+		self._warned = []
+
+	@property
+	def channels(self):
+		if self._channels == None:
+			self._channels = {}
+		
+		return self._channels
+
+	def start(self):
+		print "Started polling zwave sensors"
+		self._addPollingProcessor('zwave', self.pollZWaveSensors, None, 0.1)
+
+	def stop(self):
+		print "Stopped polling zwave sensors"
+		self._removePollingProcessor('zwave')
+		
+	# ZigBee thread main loop
+	def pollZWaveSensors(self):
+		try:
+			#http://192.168.1.158:3480/data_request?id=lu_sdata
+			#http://192.168.1.158:3480/data_request?id=lu_sdata&loadtime=1282441735&dataversion=441736333&timeout=60
+			url = self._baseUrl
+			if self._loadTime != None and self._dataVersion != None:
+				url += '&loadtime=%(load)s&dataversion=(dataversion)s' % {'load': self._loadTime, 'dataversion': self._dataVersion }
+			data = json.load(urllib2.urlopen(url)) 
+		except Exception as e:
+			if type(e) != timeout:
+				print e
+			return
+		
+		"""
+		{ 
+			"full": 1, 
+			"version": "*1.5.408*", 
+			"model": "MiCasaVerde VeraLite", 
+			"zwave_heal": 1, 
+			"temperature": "C", 
+			"serial_number": "35101786\n", 
+			"fwd1": "fwd7.mios.com", 
+			"fwd2": "fwd5.mios.com", 
+			"sections": [ { "name": "My Home", "id": 1 } ], 
+			"rooms": [ ], 
+			"scenes": [ ], 
+			"devices": [ 
+				{ 
+					"name": "4 in 1 sensor (motion)", 
+					"altid": "17", 
+					"id": 25, 
+					"category": 4, 
+					"subcategory": 3, 
+					"room": 0, 
+					"parent": 1, 
+					"armed": "1" 
+				}, 
+				{ 
+					"name": "lightSwitch", 
+					"altid": "16", 
+					"id": 24, 
+					"category": 2, 
+					"subcategory": 0, 
+					"room": 0, 
+					"parent": 1, 
+					"status": "0", 
+					"level": "0", 
+					"state": -1, 
+					"comment": "" 
+					} 
+					], 
+			"categories": [ 
+				{ "name": "Dimmable Light", "id": 2 }, 
+				{ "name": "Sensor", "id": 4 } 
+				], 
+			"ir": 0, 
+			"irtx": "", 
+			"loadtime": 1371547875, 
+			"dataversion": 547875053, 
+			"state": 2, 
+			"comment": "INSTEON: No INSTEON" 
+			}
+		"""
+
+		self._loadTime = data['loadtime']
+		self._dataVersion = data['dataversion']
+		
+		for device in data['devices']:
+			channelDescriptor = 'zwave:' + str(device['id'])
+			try:
+				sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == channelDescriptor)
+			except StopIteration:
+				#Only warn once, or we'll flood the console
+				if channelDescriptor not in self._warned:
+					print >> sys.stderr, "Warning: Unable to locate sensor record for zwave sensor ID: %s (%s)" % (str(channelDescriptor), str(device['name']))
+					self._warned.append(channelDescriptor)
+				continue
+	
+			_device = sensor['locationName']
+			_pin = sensor['name']
+			_id = sensor['sensorId']
+	
+			valueKeys = ['armed', 'status']
+			
+			val = ''
+			for valueKey in valueKeys:
+				if device.has_key(valueKey):
+					val = device[valueKey]
+					break
+	
+			if val != '-' and val != '':
+				_type = sensor['sensorTypeName']
+				_uuid = channelDescriptor
+				if _type == 'TEMPERATURE_MCP9700_HOT' or _type == 'TEMPERATURE_MCP9700_COLD':
+					_value = str((float( val) - 0.5) * 100.0)
+				else:
+					_value = val
+				
+				_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id })
+	
+				self._channels[_uuid] = { 
+										'id': _id, 
+										'room': _device, 
+										'channel': _pin, 
+										'value': _value, 
+										'status': _status
+										}
 
 ################################################################################
 #
@@ -166,22 +322,36 @@ class GEOSystem(PollingProcessor):
 										}
 
 if __name__ == '__main__':
-	from config import server_config
-	z = ZigBee(server_config['udp_listen_port'])
-	z.start()
-
-	g = GEOSystem(server_config['mysql_geo_server'],
-                            server_config['mysql_geo_user'],
-                            server_config['mysql_geo_password'],
-                            server_config['mysql_geo_db'],
-                            server_config['mysql_geo_query'])
-	g.start()
-
+	import config
+	
+	activeLocation = Locations().getActiveExperimentLocation() 
+	
+	if activeLocation == None:
+		print "Unable to determine active experiment Location"
+		exit
+	
+	sensors = []
+	for sensorType in config.locations_config[activeLocation['location']]['sensors']:
+		if sensorType == 'ZWave':
+			sensors.append(ZWave(config.server_config['zwave_ip'], config.server_config['zwave_port']))
+		elif sensorType == 'ZigBee':
+			sensors.append(ZigBee(config.server_config['udp_listen_port']))
+		elif sensorType == 'GEOSystem':
+			sensors.append(GEOSystem(config.server_config['mysql_geo_server'],
+                            config.server_config['mysql_geo_user'],
+                            config.server_config['mysql_geo_password'],
+                            config.server_config['mysql_geo_db'],
+                            config.server_config['mysql_geo_query']))
+		
+	for sensor in sensors:
+		sensor.start()
+	
 	while True:
 		try:
 			sys.stdin.read()
 		except KeyboardInterrupt:
 			break
 
-	z.stop()
-	g.stop()
+	for sensor in sensors:
+		sensor.stop()
+	

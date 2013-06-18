@@ -1,10 +1,10 @@
-import careobot
+from Robots.robotFactory import Factory
 import time
 import rosHelper
 rosHelper.ROS.configureROS(rosMaster='http://cob3-2-pc1:11311')
 
 if __name__ == '__main__':
-    c = careobot.CareOBot()
+    c = Factory.getRobot('Care-O-Bot 3.2')
 	#base straight
     #c.setComponentState('base', [4.4,1,0])
 	#base left

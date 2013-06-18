@@ -59,7 +59,7 @@ if __name__ == "__main__":
         parser.error("incorrect number of arguments")
         
     from Robots.careobot import CareOBot
-    r = CareOBot()
+    r = CareOBot('Care-O-Bot 3.2', 'http://cob3-2-pc1:11311')
     p = ProxemicMover(r)
     p.gotoTarget(int(args[1]), int(args[2]), float(args[3]), float(args[4]), float(args[5]))
     

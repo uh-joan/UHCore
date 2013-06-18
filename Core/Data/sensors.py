@@ -56,7 +56,7 @@ class StateResolver(object):
     
     def appendSensorMetadata(self, sensorList):
         """adds location and type data to a list of sensors"""
-        """this data eventually needs to go in the database"""
+        """this REALLY needs to go in the database"""
         from xml.etree import ElementTree as et
         from SensorMap.processor import CoordinateConvertor
         import os

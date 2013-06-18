@@ -6,10 +6,10 @@ server_config = {
   'http_port':       1055,
 
   # The settings for the channel logging MySQL server / database / table
-  'mysql_log_server':   'rh-database',
-  'mysql_log_user':     'rhUser',
-  'mysql_log_password': 'waterloo',
-  'mysql_log_db':       'Accompany2',
+  'mysql_log_server':   'localhost',
+  'mysql_log_user':     'root',
+  'mysql_log_password': 'accompany',
+  'mysql_log_db':       'Accompany',
   'mysql_log_table':    'SensorLog',
   
   'mysql_history_table':'ActionHistory',
@@ -22,6 +22,8 @@ server_config = {
   'mysql_questions_table':'userInterfaceGUI',
   'mysql_responses_table':'userInterfaceGUI',
   'mysql_users_table':'Users',
+  'mysql_experimentLocations_table':'ExperimentalLocation',
+  'mysql_session_table':'SessionControl',
   
   # The port on which the program is listening for UDP broadcast messages
   # transmitted by the ZigBee gateway
@@ -34,6 +36,15 @@ server_config = {
   'mysql_geo_password': 'r0b0th0use##',
   'mysql_geo_db':       'livewiredb',
   'mysql_geo_query':    'CALL expPower',
+  
+  # Settings for the zwave sensor network,
+  'zwave_ip': '192.168.1.158',
+  'zwave_port': 3480
+}
+
+locations_config = {
+  'ZUYD Apartment': {'sensors': ['ZWave'], 'map': 'zuyd.svg' },
+  'UH Robot House': {'sensors': ['ZigBee', 'GEOSystem'], 'map': 'RobotHouseMap.svg' }
 }
 
 """ Note: While the defaults for {version} will be read from the setup.bash file, 
@@ -41,10 +52,10 @@ server_config = {
     if any overrides are set in .bashrc, they need to be redefined here
 """
 ros_config = {
-    'version': 'electric',
-    'overlayPath': '~/ROS_Workspace/electric',
+    'version': 'groovy',
+    'overlayPath': '~/git',
     'envVars': {
-                 'ROBOT':'cob3-2'
+                 'ROBOT':'cob3-6',
                  }
     }
 
