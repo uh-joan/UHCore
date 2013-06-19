@@ -66,12 +66,12 @@ locations_config = {
 robot_config = {
                 'Care-O-Bot 3.2': {
                                    'phidgets': ['/range_0', '/range_1', '/range_2', '/range_3'],
-                                   'tray': { 'raised': 'up', 'lowered': 'down'},
+                                   'tray': { 'raised': 'up', 'lowered': 'down', 'size':20},
                                    'head': { 'front': 'front', 'back': 'back'},
                                    },
                 'Care-O-Bot 3.6': {
                                    'phidgets': ['/tray_sensors/range_0', '/tray_sensors/range_1', '/tray_sensors/range_2', '/tray_sensors/range_3'],
-                                   'tray': { 'raised': 'deliverup', 'lowered': 'store'},
+                                   'tray': { 'raised': 'deliverup', 'lowered': 'store', 'size':10},
                                    'head': { 'front': 'front', 'back': 'back'},
                                    }
                 }

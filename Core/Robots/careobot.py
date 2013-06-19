@@ -152,6 +152,7 @@ class PoseUpdater(robot.PoseUpdater):
     def __init__(self, robot):
         super(PoseUpdater, self).__init__(robot)
         self._rangeSensors = robot_config[robot.name]['phidgets']
+        self._rangeThreshold = robot_config[robot.name]['tray']['size'] / 100
         self._trayState = robot_config[robot.name]['tray']
         self._headState = robot_config[robot.name]['head']
     
@@ -211,10 +212,9 @@ class PoseUpdater(robot.PoseUpdater):
             ranges.append(self._ros.getSingleMessage(topic=topic, timeout=0.25))
         
         if None not in ranges:
-            threshold = 0.2
             trayIsEmpty = 'empty'
             for range_ in ranges:
-                if range_ < threshold:
+                if range_.range < self._rangeThreshold:
                     trayIsEmpty = 'full'
                     break
 
