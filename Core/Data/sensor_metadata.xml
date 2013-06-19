@@ -61,5 +61,9 @@
 	<sensor direction="270.0" id="59" type="doorbell" x="-3.73" y="0.1725" z="5" />
 	
 	<!-- Zuyd Apartment -->
-	<sensor direction="270.0" id="600" type="light" x="1.1375" y="2.74375" z="10" />
+	<sensor direction="90" id="301" type="large chair" x="-0.5" y="3.5" z="10" />
+	<sensor direction="270.0" id="302" type="doorbell" x="0.5" y="-1.79" z="10" />
+	<sensor direction="180" id="303" type="fridge" x="6.1" y="1.6" z="10" />
+	<sensor direction="90" id="304" type="large chair" x="0.5" y="3.5" z="10" />
+	<sensor direction="180" id="305" type="large chair" x="1.5" y="2.5" z="10" />
 </sensors>

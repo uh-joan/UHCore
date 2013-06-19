@@ -2,6 +2,7 @@ import math, sys
 from PIL import Image
 import robot
 import rosHelper
+from config import robot_config
 from exceptions import StopIteration
 
 class CareOBot(robot.Robot):
@@ -150,32 +151,73 @@ class ActionLib(object):
 class PoseUpdater(robot.PoseUpdater):
     def __init__(self, robot):
         super(PoseUpdater, self).__init__(robot)
+        self._rangeSensors = robot_config[robot.name]['phidgets']
+        self._trayState = robot_config[robot.name]['tray']
+        self._headState = robot_config[robot.name]['head']
     
     def checkUpdatePose(self, robot):
         self.updateTray(robot)
+        self.updateHead(robot)
+        
+    def updateHead(self, robot):
+        (name, _) = robot.getComponentState('head')
+        if name == self._headState['front']:
+            headPosition = 'front'
+        elif name == self._headState['back']:
+            headPosition = 'back'
+        else:
+            headPosition = 'inProgress'
+            
+        _states = {
+                   'eyePosition': (headPosition, headPosition),
+                   }
+
+        for key, value in _states.items():
+            if value[1] != None:
+                try:
+                    #sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
+                    sensor = next(s for s in self._sensors if s['name'] == "%s" % (key))
+                    if key in self._warned:
+                        self._warned.remove(key)
+                except StopIteration:
+                    if key not in self._warned:
+                        print >> sys.stderr, "Warning: Unable to locate sensor record for %s sensor %s." % (self._robot.name, key)
+                        self._warned.append(key)
+                    continue
+                
+                _id = sensor['sensorId']
+                self._channels[key] = {
+                                         'id': _id,
+                                         'room': self._robot.name,
+                                         'channel': key,
+                                         'value': value[0],
+                                         'status': value[1] }
+        
 
     def updateTray(self, robot):
         (name, _) = robot.getComponentState('tray')
 
         trayPosition = None
         trayIsEmpty = None
-        if name == 'up':
+        if name == self._trayState['raised']:
             trayPosition = 'raised'
-        elif name == 'down':
+        elif name == self._trayState['lowered']:
             trayPosition = 'lowered'
         else:
             trayPosition = 'inProgress'
-            
-        range0 = self._ros.getSingleMessage(topic='/range_0', timeout=0.25)
-        range1 = self._ros.getSingleMessage(topic='/range_0', timeout=0.25)
-        range2 = self._ros.getSingleMessage(topic='/range_0', timeout=0.25)
-        range3 = self._ros.getSingleMessage(topic='/range_0', timeout=0.25)
-        if range0 != None and range1 != None and range2 != None and range3 != None:
+        
+        ranges = []
+        for topic in self._rangeSensors:
+            ranges.append(self._ros.getSingleMessage(topic=topic, timeout=0.25))
+        
+        if None not in ranges:
             threshold = 0.2
-            if range0.range < threshold or range1.range < threshold or range2.range < threshold or range3.range < threshold:
-                trayIsEmpty = 'full'                
-            else:
-                trayIsEmpty = 'empty'
+            trayIsEmpty = 'empty'
+            for range_ in ranges:
+                if range_ < threshold:
+                    trayIsEmpty = 'full'
+                    break
+
             if self._warned.has_key('phidget'):
                 self._warned.remove('phidget')
         else:
@@ -186,13 +228,14 @@ class PoseUpdater(robot.PoseUpdater):
 
         _states = {
                    'trayStatus': (trayPosition, trayPosition),
-                   'trayIs': (trayIsEmpty, trayPosition) }
+                   'trayIs': (trayIsEmpty, trayIsEmpty) }
 
         for key, value in _states.items():
             if value[1] != None:
-                try:                           
-                    sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
-                    if self._warned.has_key(key):
+                try:
+                    #sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
+                    sensor = next(s for s in self._sensors if s['name'] == "%s" % (key))
+                    if key in self._warned:
                         self._warned.remove(key)
                 except StopIteration:
                     if key not in self._warned:

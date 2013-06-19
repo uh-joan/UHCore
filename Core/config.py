@@ -43,13 +43,43 @@ server_config = {
 }
 
 locations_config = {
-  'ZUYD Apartment': {'sensors': ['ZWave'], 'map': 'zuyd.svg' },
-  'UH Robot House': {'sensors': ['ZigBee', 'GEOSystem'], 'map': 'RobotHouseMap.svg' }
+  'ZUYD Apartment': {
+                     'sensors': ['ZWave'], 
+                    'map': {
+                            'base':'zuyd.svg', 
+                            'scale':0.275, 
+                            'offset':(105, 300), 
+                            'rotation': -90 
+                            }
+                     },
+  'UH Robot House': {
+                    'sensors': ['ZigBee', 'GEOSystem'], 
+                    'map': {
+                            'base':'RobotHouseMap.svg', 
+                            'scale':0.275, 
+                            'offset':(81, 245), 
+                            'rotation': -90 
+                            }
+                     }
 }
+
+robot_config = {
+                'Care-O-Bot 3.2': {
+                                   'phidgets': ['/range_0', '/range_1', '/range_2', '/range_3'],
+                                   'tray': { 'raised': 'up', 'lowered': 'down'},
+                                   'head': { 'front': 'front', 'back': 'back'},
+                                   },
+                'Care-O-Bot 3.6': {
+                                   'phidgets': ['/tray_sensors/range_0', '/tray_sensors/range_1', '/tray_sensors/range_2', '/tray_sensors/range_3'],
+                                   'tray': { 'raised': 'deliverup', 'lowered': 'store'},
+                                   'head': { 'front': 'front', 'back': 'back'},
+                                   }
+                }
 
 """ Note: While the defaults for {version} will be read from the setup.bash file, 
     NO ENVIRONMENT VARIABLES WILL BE READ FROM .bashrc
     if any overrides are set in .bashrc, they need to be redefined here
+    This is only important when running from within the IDE or an unconfigured bash shell
 """
 ros_config = {
     'version': 'groovy',

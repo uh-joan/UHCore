@@ -1,9 +1,9 @@
 import time, os, sys
 from subprocess import Popen, PIPE
 from config import ros_config
-from threading import Lock
+from threading import RLock
 
-_threadLock = Lock()
+_threadLock = RLock()
 
 class ROS(object):
     _envVars = {}    
@@ -77,7 +77,11 @@ class ROS(object):
         # in this case, get all of them and loop through
         topics = []
         with _threadLock:
-            allTopics = self._rospy.get_published_topics()
+            try:
+                allTopics = self._rospy.get_published_topics()
+            except Exception as e:
+                print "Error while retrieving topics, will retry %s more times." % retry
+                return self.getTopics(baseFilter, exactMatch, retry - 1)
         
         if baseFilter.startswith('/'):
             baseFilter = baseFilter[1:]

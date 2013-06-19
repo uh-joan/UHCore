@@ -28,7 +28,7 @@ class MapImage(object):
 
         mp = MapProcessor(self._emptyMap)
         sensors = self._sr.resolveStates(self._dao.findSensors())
-        sensors = self._sr.appendSensorMetadata(sensors) #adds location and type
+        sensors = self._sr.appendSensorMetadata(sensors, self._emptyMap) #adds location and type
         cob = self._dao.getRobotByName(self._robotName)
         robot = {
                'type':'robot', 

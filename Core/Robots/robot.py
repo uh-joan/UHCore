@@ -3,7 +3,7 @@ import sys, os
 path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 sys.path.append(path)
 
-import io, math, time, sys
+import io, math, time
 from PIL import Image
 from extensions import PollingProcessor
 from Data.dataAccess import Sensors
@@ -15,7 +15,7 @@ class PoseUpdater(PollingProcessor):
         super(PoseUpdater, self).__init__()
         self._robot = robot
         self._ros = rosHelper.ROS()
-        self._sensors = Sensors().findSensors()
+        self._sensors = Sensors().findSensors(None, False)
         self._channels = {}
         self._warned = []
     
@@ -133,13 +133,12 @@ class Robot(object):
         return self._ros._states[status]
         
     def getComponentPositions(self, componentName):
-        return []
-#        try:
-#            self._ros.configureROS(packageName='rospy')
-#            import rospy
-#            return rospy.get_param('%s/%s' % (self._serverTopic, componentName))
-#        except:
-#            return []
+        try:
+            self._ros.configureROS(packageName='rospy')
+            import rospy
+            return rospy.get_param('%s/%s' % (self._serverTopic, componentName))
+        except:
+            return []
 
     def getComponents(self):
         try:

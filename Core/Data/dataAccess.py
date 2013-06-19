@@ -432,7 +432,7 @@ class Sensors(object):
                                                                                  'type': self._sensorTypeTable,
                                                                                  'loc': self._locationTable }
                 
-        self._sqlQuery += " WHERE ((`sensorId` >= %(min)s AND `sensorId` <= %(max)s) OR (`sensorId` > 700)) " % {
+        self._sqlQuery += " WHERE ((`sensorId` >= %(min)s AND `sensorId` <= %(max)s) OR (`sensorId` >= 500 AND `sensorId` <= 799 )) " % {
                                                                                       'min': sensorRange[0], 
                                                                                       'max': sensorRange[1]
                                                                                       }
@@ -452,12 +452,14 @@ class Sensors(object):
             
         return self._sql.getSingle(sql, args)
     
-    def findSensors(self, sensorName=None):
+    def findSensors(self, sensorName=None, onlyPhysical=True):
         args = None
         sql = self._sqlQuery
         if sensorName != None:
-            sql += " AND `%s`.`name` like" % (self._sensorTable) + " %(name)s" 
+            sql += " AND `%s`.`name` like" % (self._sensorTable) + " %(name)s"
             args = {'name': sensorName}
+        if onlyPhysical:
+            sql += " AND `%s`.`sensorId` < 500" % (self._sensorTable)
             
         return self._sql.getData(sql, args)
 
