@@ -218,7 +218,7 @@ class PoseUpdater(robot.PoseUpdater):
                     trayIsEmpty = 'full'
                     break
 
-            if self._warned.has_key('phidget'):
+            if 'phidget'in self._warned:
                 self._warned.remove('phidget')
         else:
             trayIsEmpty = 'unknown'
