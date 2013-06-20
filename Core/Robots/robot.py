@@ -7,6 +7,7 @@ import io, math, time
 from PIL import Image
 from extensions import PollingProcessor
 from Data.dataAccess import Sensors
+from config import robot_config
 import Data.dataAccess
 import rosHelper
 
@@ -78,16 +79,20 @@ class Robot(object):
         imgBytes = io.BytesIO()
         imgBytes.write(img_msg.data)
         
-        angle = self.getCameraAngle()
-
         imgBytes.seek(0)
         img = Image.open(imgBytes)
+
+        if robot_config[self._name]['head']['camera'].has_key('rotate'):
+            angle = self.getCameraAngle() or 0
+    
+            a = abs(angle - robot_config[self._name]['head']['camera']['rotate']['angle'])
+            if a > 180:
+                a = abs(a - 360)
             
-        #0=back, 180=front, 270=top, 90=bottom.  rotate if not front (0-180 are invalid angles, only included for 'buffer')
-        if angle >= 90 and angle <= 270:
-            img = img.rotate(180)
-        else:
-            pass
+            #0=back, 180=front, 270=top, 90=bottom.  rotate if not front (0-180 are invalid angles, only included for 'buffer')
+            #if angle <= 90 and angle >= 270:
+            if a <= robot_config[self._name]['head']['camera']['rotate']['distance']:
+                img = img.rotate(robot_config[self._name]['head']['camera']['rotate']['amount'])
         
         retFormat = retFormat.upper()
         if retFormat == 'JPG':
@@ -154,7 +159,8 @@ class Robot(object):
         
         try:
             ret = {'name': componentName, 'positions': state.actual.positions, 'goals': state.desired.positions, 'joints': state.joint_names }
-        except: 
+        except:
+            print "Error retrieving joint state" 
             ret = {'name': componentName, 'positions': (), 'goals': (), 'joints': () }
             
         if dontResolveName:
@@ -162,7 +168,7 @@ class Robot(object):
         else:
             return self.resolveComponentState(componentName, ret)
     
-    def resolveComponentState(self, componentName, state, tolerance=0.10):
+    def resolveComponentState(self, componentName, state, tolerance=0.5):
         if state == None:
             return (None, None)
         

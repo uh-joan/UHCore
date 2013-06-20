@@ -4,17 +4,22 @@ import robot
 import rosHelper
 from config import robot_config
 from exceptions import StopIteration
+from collections import deque
 
 class CareOBot(robot.Robot):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name, rosMaster):
         rosHelper.ROS.configureROS(rosMaster = rosMaster)
-        super(CareOBot, self).__init__(name, ActionLib(), 'script_server', '/stereo/right/image_color/compressed')
+        super(CareOBot, self).__init__(name, ActionLib(), 'script_server', robot_config[name]['head']['camera']['topic'])
         #super(CareOBot, self).__init__(name, ScriptServer(), 'script_server', '/stereo/right/image_color/compressed')
                 
     def getCameraAngle(self):
-        (_, cameraState) = self.getComponentState('head', True)
+        state = self.getComponentState('head', True)
+        if state == None:
+            return None
+        else:
+            (_, cameraState) = state
         
         pos = cameraState['positions'][0]
         angle = round(math.degrees(pos), 2)
@@ -151,105 +156,105 @@ class ActionLib(object):
 class PoseUpdater(robot.PoseUpdater):
     def __init__(self, robot):
         super(PoseUpdater, self).__init__(robot)
-        self._rangeSensors = robot_config[robot.name]['phidgets']
-        self._rangeThreshold = robot_config[robot.name]['tray']['size'] / 100
-        self._trayState = robot_config[robot.name]['tray']
-        self._headState = robot_config[robot.name]['head']
+        self._rangeSensors = robot_config[robot.name]['phidgets']['topics']
+        self._rangeThreshold = robot_config[robot.name]['tray']['size'] / 100.0
+        self._rangeWindow = robot_config[robot.name]['phidgets']['windowSize']
+        self._rangeHistory = {}
+        self._trayState = robot_config[robot.name]['tray']['positions']
+        self._headState = robot_config[robot.name]['head']['positions']
     
     def checkUpdatePose(self, robot):
-        self.updateTray(robot)
-        self.updateHead(robot)
+        states = {}
+        states.update(self.getTrayStates(robot))
+        states.update(self.getHeadStates(robot))
+        self.updateStates(states)
         
-    def updateHead(self, robot):
-        (name, _) = robot.getComponentState('head')
-        if name == self._headState['front']:
-            headPosition = 'front'
-        elif name == self._headState['back']:
-            headPosition = 'back'
-        else:
-            headPosition = 'inProgress'
-            
-        _states = {
-                   'eyePosition': (headPosition, headPosition),
+    def updateStates(self, states):
+        for key, value in states.items():
+            if value[1] != None:
+                try:
+                    #sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
+                    sensor = next(s for s in self._sensors if s['name'] == "%s" % (key))
+                    if key in self._warned:
+                        self._warned.remove(key)
+                except StopIteration:
+                    if key not in self._warned:
+                        print >> sys.stderr, "Warning: Unable to locate sensor record for %s sensor %s." % (self._robot.name, key)
+                        self._warned.append(key)
+                    continue
+                
+                _id = sensor['sensorId']
+                self._channels[key] = {
+                                         'id': _id,
+                                         'room': self._robot.name,
+                                         'channel': key,
+                                         'value': value[0],
+                                         'status': value[1] }
+        
+    def getHeadStates(self, robot):
+        return {
+                   'eyePosition': self.getComponentPosition(robot, 'head', self._headState),
                    }
-
-        for key, value in _states.items():
-            if value[1] != None:
-                try:
-                    #sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
-                    sensor = next(s for s in self._sensors if s['name'] == "%s" % (key))
-                    if key in self._warned:
-                        self._warned.remove(key)
-                except StopIteration:
-                    if key not in self._warned:
-                        print >> sys.stderr, "Warning: Unable to locate sensor record for %s sensor %s." % (self._robot.name, key)
-                        self._warned.append(key)
-                    continue
-                
-                _id = sensor['sensorId']
-                self._channels[key] = {
-                                         'id': _id,
-                                         'room': self._robot.name,
-                                         'channel': key,
-                                         'value': value[0],
-                                         'status': value[1] }
+    
+    def getPhidgetState(self):        
+        trayIsEmpty = None                
         
-
-    def updateTray(self, robot):
-        (name, _) = robot.getComponentState('tray')
-
-        trayPosition = None
-        trayIsEmpty = None
-        if name == self._trayState['raised']:
-            trayPosition = 'raised'
-        elif name == self._trayState['lowered']:
-            trayPosition = 'lowered'
-        else:
-            trayPosition = 'inProgress'
-        
-        ranges = []
+        averages = []
         for topic in self._rangeSensors:
-            ranges.append(self._ros.getSingleMessage(topic=topic, timeout=0.25))
+            if not self._rangeHistory.has_key(topic):
+                self._rangeHistory[topic] = deque()
+            
+            rangeMsg = self._ros.getSingleMessage(topic=topic, timeout=0.25)
+            if rangeMsg == None:
+                if topic not in self._warned: 
+                    self._warned.append(topic)
+                    print "Phidget sensor not ready before timeout for topic: %s" % topic
+                    return None
+            else:
+                if topic in self._warned:
+                    self._warned.remove(topic)
+
+            self._rangeHistory[topic].append(rangeMsg.range)
+            if len(self._rangeHistory[topic]) > self._rangeWindow:
+                self._rangeHistory[topic].popleft()
+            
+            averages.append(sum(self._rangeHistory[topic]) / len(self._rangeHistory[topic]))
         
-        if None not in ranges:
-            trayIsEmpty = 'empty'
-            for range_ in ranges:
-                if range_.range < self._rangeThreshold:
-                    trayIsEmpty = 'full'
-                    break
-
-            if 'phidget'in self._warned:
-                self._warned.remove('phidget')
+        
+        if any(map(lambda x: x <= self._rangeThreshold, averages)):
+            trayIsEmpty = 'full'
         else:
-            trayIsEmpty = 'unknown'
-            if 'phidget' not in self._warned: 
-                self._warned.append('phidget')
-                print "Phidget sensors not ready before timeout"
+            trayIsEmpty = 'empty'
+   
+        return (trayIsEmpty, trayIsEmpty)
 
-        _states = {
-                   'trayStatus': (trayPosition, trayPosition),
-                   'trayIs': (trayIsEmpty, trayIsEmpty) }
+    def getComponentPosition(self, robot, componentName, positions):
+        state = robot.getComponentState(componentName)
+        if state == None:
+            print "No component state for: %s" % componentName
+            return None
+        else:
+            (name, _) = state
+        
+        position = None
+        for key, value in positions.items():
+            if name == value:
+                position = key
+                break
+        
+        #debug code
+        if position == None:
+            position = 'unnamed'
+            print 'Name: %s, Pose: %s' % state
+            
+        #position = position or 'unnamed'
+        return (position, position)
 
-        for key, value in _states.items():
-            if value[1] != None:
-                try:
-                    #sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
-                    sensor = next(s for s in self._sensors if s['name'] == "%s" % (key))
-                    if key in self._warned:
-                        self._warned.remove(key)
-                except StopIteration:
-                    if key not in self._warned:
-                        print >> sys.stderr, "Warning: Unable to locate sensor record for %s sensor %s." % (self._robot.name, key)
-                        self._warned.append(key)
-                    continue
-                
-                _id = sensor['sensorId']
-                self._channels[key] = {
-                                         'id': _id,
-                                         'room': self._robot.name,
-                                         'channel': key,
-                                         'value': value[0],
-                                         'status': value[1] }
+    def getTrayStates(self, robot):
+        return {
+                   'trayStatus': self.getComponentPosition(robot, 'tray', self._trayState),
+                   'trayIs': self.getPhidgetState() }
+
                 
 if __name__ == '__main__':
     from robotFactory import Factory

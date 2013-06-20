@@ -114,7 +114,7 @@ if __name__ == '__main__':
     import config
     import sensors
     from Data.dataAccess import Locations
-    from sensors import GEOSystem, ZigBee, ZWave
+    from sensors import GEOSystem, ZigBee, ZWaveHomeController, ZWaveVeraLite
         
     activeLocation = Locations().getActiveExperimentLocation() 
     
@@ -126,8 +126,10 @@ if __name__ == '__main__':
     dataUpdaters = []
     for sensorType in config.locations_config[activeLocation['location']]['sensors']:
         sensor = None
-        if sensorType == 'ZWave':
-            sensor = ZWave(config.server_config['zwave_ip'], config.server_config['zwave_port'])
+        if sensorType == 'ZWaveHomeController':
+            sensor = ZWaveHomeController(config.server_config['zwave_ip'])
+        elif sensorType == 'ZWaveVeraLite':
+            sensor = ZWaveVeraLite(config.server_config['zwave_ip'], config.server_config['zwave_port'])
         elif sensorType == 'ZigBee':
             sensor = ZigBee(config.server_config['udp_listen_port'])
         elif sensorType == 'GEOSystem':

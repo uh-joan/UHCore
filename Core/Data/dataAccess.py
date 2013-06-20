@@ -7,9 +7,8 @@ class Locations(object):
         self._userTable = userTable or server_config['mysql_users_table']
         self._locationTable = locationTable or server_config['mysql_location_table']
         self._experimentLocationTable = server_config['mysql_experimentLocations_table']
-        self._sessionControlTable = server_config['mysql_session_table']
-        self._sql = SQLDao()
-        
+        self._sessionControlTable = server_config['mysql_session_control_table']
+        self._sql = SQLDao()        
         
         if locationRange == None:
             activeLocation = self.getActiveExperimentLocation()
@@ -121,7 +120,7 @@ class Locations(object):
         return self.saveLocation(robotid, locid, x, y, orientation, self._robotTable, 'robotId')
         
     def saveUserLocation(self, userId, locid, x, y, orientation):
-        return self.saveLocation(userId, locid, x, y, orientation, self._userTable, 'userId')    
+        return self.saveLocation(userId, locid, x, y, orientation, self._userTable, 'userId')
 
 class UserInterface(object):
     
@@ -177,10 +176,13 @@ class UserInterface(object):
         return data
 
 class Users(object):
-    def __init__(self, userTable=None, locationTable=None):
+    def __init__(self, userTable=None, locationTable=None, userPreferencesTable=None, personasTable=None):
         from config import server_config
         self._userTable = userTable or server_config['mysql_users_table']
         self._locationTable = locationTable or server_config['mysql_location_table']
+        self._sessionControlTable = server_config['mysql_session_control_table']
+        self._userPreferencesTable = userPreferencesTable or server_config['mysql_user_preferences_table']
+        self._personasTable = personasTable or server_config['mysql_personas_table']
         self._sql = SQLDao()
     
     def getUser(self, userId):
@@ -220,6 +222,75 @@ class Users(object):
             args = {'name': userName }
 
         return self._sql.getData(sql, args)
+    
+    def getActiveUserName(self):
+        sql = "SELECT `%(user)s`.`nickname` \
+               FROM `%(user)s` \
+               WHERE `%(user)s`.`userId` IN ( \
+                        SELECT `%(session)s`.`sessionUser` \
+                        FROM `%(session)s` )" % {
+                              'user': self._userTable,
+                              'session': self._sessionControlTable
+                              }       
+        args = None
+        
+        return self._sql.getData(sql, args)
+    
+    def getUserPreferences(self):
+        sql = "SELECT `%(user)s`.* \
+               FROM `%(user)s` \
+               WHERE `%(user)s`.`userId` IN ( \
+                        SELECT `%(session)s`.`sessionUser` \
+                        FROM `%(session)s` )" % {
+                              'user': self._userPreferencesTable,
+                              'session': self._sessionControlTable
+                              }       
+        args = None
+        
+        return self._sql.getData(sql, args)
+        
+    def setUserPreferences(self, column, value):
+        sql = "UPDATE `%(preferences)s` \
+               SET `%(column)s` = %(value)s \
+               WHERE `%(preferences)s`.`userId` IN ( \
+                        SELECT `%(session)s`.`sessionUser` \
+                        FROM `%(session)s` )" % {
+                              'preferences':  self._userPreferencesTable,
+                              'session': self._sessionControlTable,
+                              'column': column,
+                              'value': "%(value)s"
+                              }
+        args = { 
+                'value': value
+                }
+        
+        return self._sql.saveData(sql, args) >= 0
+    
+    def setSessionControlTime(self, time):
+        sql = 'UPDATE `%s` ' % (self._sessionControlTable)
+        sql += 'SET `sessionTime` = %(time)s'
+        
+        args = { 'time': time }
+        
+        if self._sql.saveData(sql, args) >= 0:
+            return True
+        else:
+            return False
+        
+    def getPersonaValues(self):
+        sql = "SELECT `%(persona)s`.* \
+               FROM `%(persona)s` \
+               WHERE `%(persona)s`.`personaId` IN ( \
+                        SELECT `%(user)s`.`personaId` \
+                        FROM `%(user)s`, `%(session)s` \
+                        WHERE `%(session)s`.`sessionUser` = `%(user)s`.`userId` )" % {
+                              'persona': self._personasTable,
+                              'user': self._userTable,
+                              'session': self._sessionControlTable
+                              }        
+        args = None
+        
+        return self._sql.getData(sql, args)
 
 class Robots(object):
     
@@ -227,6 +298,7 @@ class Robots(object):
         from config import server_config
         self._robotTable = robotTable or server_config['mysql_robot_table']
         self._locationTable = locationTable or server_config['mysql_location_table']
+        self._sessionControlTable = server_config['mysql_session_control_table']
         self._sql = SQLDao()
 
     def getRobot(self, robotId):
@@ -267,6 +339,16 @@ class Robots(object):
 
         return self._sql.getData(sql, args)
 
+    def getActivatedRobot(self):
+        sql = "SELECT `%(rob)s`.`robotName` \
+               FROM `%(rob)s` \
+               INNER JOIN `%(session)s` ON `%(session)s`.`robotId` = `%(rob)s`.`robotId`" % {
+                              'rob': self._robotTable,
+                              'session': self._sessionControlTable
+                              }
+               
+        return self._sql.getData(sql)
+    
 class ActionHistory(object):
     def __init__(self, actionHistoryTable=None, sensorSnapshotTable=None, sensorTable=None, sensorTypeTable=None, locationTable=None):
         from config import server_config

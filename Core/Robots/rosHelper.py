@@ -81,7 +81,10 @@ class ROS(object):
                 allTopics = self._rospy.get_published_topics()
             except Exception as e:
                 print "Error while retrieving topics, will retry %s more times." % retry
-                return self.getTopics(baseFilter, exactMatch, retry - 1)
+                if(retry > 0):
+                    return self.getTopics(baseFilter, exactMatch, retry - 1)
+                else:
+                    return topics
         
         if baseFilter.startswith('/'):
             baseFilter = baseFilter[1:]

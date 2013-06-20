@@ -1,6 +1,6 @@
-from Data.dataAccess import DataAccess
+from Data.dataAccess import DataAccess, Locations
+from config import server_config
 from extensions import PollingProcessor
-from Robots.robot import Robot
 import math
 
 class LocationProcessor(PollingProcessor):
@@ -64,19 +64,64 @@ class RobotLocationProcessor(LocationProcessor):
         robId = self._dao.getRobotByName(self._robot.name)['robotId']
         self._targetName = self._robot.name
         self._storedLoc = lambda: self._dao.getRobot(robId)
-        self._curLoc = lambda: self._robot.getLocation(False)
-        
+        self._curLoc = lambda: self._robot.getLocation(False)        
         self._updateLoc = lambda locid, x, y, orientation: self._dao.saveRobotLocation(robId, locid, x, y, orientation)
 
 class HumanLocationProcessor(LocationProcessor):
     
-    def __init__(self, robot=None):
-        pass
+    def __init__(self):        
+        super(HumanLocationProcessor, self).__init__()
+        
+        from Robots.rosHelper import ROS, Transform
+        self._ros = ROS()
+        self._topic = '/trackedHumans'
+        self._tm = None        
+        self._transform = Transform(toTopic='/map', fromTopic='/room_frame')
+        
+        self._targetName = "Humans"
+        self._storedLoc = self._getStoredLoc
+        self._curLoc = self._getCurrentLoc
+        self._updateLoc = lambda locid, x, y, orientation: self._update(locid, x, y, orientation)
+    
+    @property
+    def _transformMatrix(self):
+        if self._tm == None:
+            ((x, y, _), rxy) = self._transform.getTransform()
+            if x == None or y == None:
+                return ('', (None, None, None))
+            
+            angle = round(math.degrees(rxy))
+            self._tm = (round(x, 3), round(y, 3), angle)
+        
+        return self._tm
 
+    def _update(self, locid, x, y, theta):
+        self._dao.locations.saveLocation(999, 999, x, y, theta, server_config['mysql_location_table'], 'locationId')
+    
+    def _getCurrentLoc(self):
 
+        locs = self._ros.getSingleMessage(self._topic)
+        if len(locs.trackedHumans) > 0:
+            loc = locs.trackedHumans[0]
+        else:
+            return ('', (None, None, None))
+        
+        x = loc.location.point.x + self._transformMatrix[0]
+        y = loc.location.point.y + self._transformMatrix[1]
+        angle = 0 + self._transformMatrix[2]
+        print "Using human location from id: %s" % loc.id
+        
+        pos = (round(x, 3), round(y, 3), angle)        
+        return Locations.resolveLocation(pos)
+    
+    def _getStoredLoc(self):
+        loc = self._dao.getLocation(999)
+        loc['locationName'] = loc['name']
+        return loc
+    
 if __name__ == '__main__':
     import sys
-    lp = RobotLocationProcessor()
+    lp = HumanLocationProcessor()
     lp.start()
     while True:
         try:

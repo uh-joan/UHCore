@@ -23,7 +23,7 @@ server_config = {
   'mysql_responses_table':'userInterfaceGUI',
   'mysql_users_table':'Users',
   'mysql_experimentLocations_table':'ExperimentalLocation',
-  'mysql_session_table':'SessionControl',
+  'mysql_session_control_table':'SessionControl',
   
   # The port on which the program is listening for UDP broadcast messages
   # transmitted by the ZigBee gateway
@@ -38,13 +38,12 @@ server_config = {
   'mysql_geo_query':    'CALL expPower',
   
   # Settings for the zwave sensor network,
-  'zwave_ip': '192.168.1.158',
-  'zwave_port': 3480
+  'zwave_ip': '192.168.1.109',
 }
 
 locations_config = {
   'ZUYD Apartment': {
-                     'sensors': ['ZWave'], 
+                     'sensors': ['ZWaveHomeController'], 
                     'map': {
                             'base':'zuyd.svg', 
                             'scale':0.275, 
@@ -65,14 +64,40 @@ locations_config = {
 
 robot_config = {
                 'Care-O-Bot 3.2': {
-                                   'phidgets': ['/range_0', '/range_1', '/range_2', '/range_3'],
-                                   'tray': { 'raised': 'up', 'lowered': 'down', 'size':20},
-                                   'head': { 'front': 'front', 'back': 'back'},
+                                   'phidgets': {'topics': ['/range_0', '/range_1', '/range_2', '/range_3'], 'windowSize': 5},
+                                   'tray': { 'positions': {'raised': 'up', 'lowered': 'down'}, 'size': 20},
+                                   'head': { 
+                                            'positions': {
+                                                          'front': 'front', 
+                                                          'back': 'back'
+                                                          }, 
+                                            'camera': {
+                                                       'topic':'/stereo/right/image_color/compressed', 
+                                                       'rotate': {
+                                                                         'angle': 180, 
+                                                                         'distance': 90,
+                                                                         'amount': 180
+                                                                         }
+                                                       }
+                                            },
                                    },
                 'Care-O-Bot 3.6': {
-                                   'phidgets': ['/tray_sensors/range_0', '/tray_sensors/range_1', '/tray_sensors/range_2', '/tray_sensors/range_3'],
-                                   'tray': { 'raised': 'deliverup', 'lowered': 'store', 'size':10},
-                                   'head': { 'front': 'front', 'back': 'back'},
+                                   'phidgets': {'topics': ['/tray_sensors/range_0', '/tray_sensors/range_1', '/tray_sensors/range_2', '/tray_sensors/range_3'], 'windowSize': 5},
+                                   'tray': { 'positions': {'raised': 'deliverup', 'lowered': 'store'}, 'size': 10},
+                                   'head': { 
+                                            'positions': {
+                                                          'front': 'front', 
+                                                          'back': 'back'
+                                                          },
+                                            'camera': {
+                                                       'topic':'/stereo/right/image_color/compressed', 
+                                                       'rotate': {
+                                                                         'angle': 0, 
+                                                                         'distance': 90,
+                                                                         'amount': 180
+                                                                         }
+                                                       }
+                                            },
                                    }
                 }
 
