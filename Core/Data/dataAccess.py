@@ -13,13 +13,13 @@ class Locations(object):
         if locationRange == None:
             activeLocation = self.getActiveExperimentLocation()
             if activeLocation == None:
-                locationRange = [0,0]
+                locationRange = [0, 0]
             else:
                 locationRange = (activeLocation['startLocationRange'], activeLocation['endLocationRange'])
 
         self._sqlQuery = 'SELECT * FROM `%s`' % (self._locationTable)
         self._locationFilter = " `locationId` >= %(min)s AND `locationId` <= %(max)s" % {
-                                                                                      'min': locationRange[0], 
+                                                                                      'min': locationRange[0],
                                                                                       'max': locationRange[1]
                                                                                       }
 
@@ -62,8 +62,8 @@ class Locations(object):
             dist = 0
             dist += math.pow(curPos[0] - loc['xCoord'], 2)
             dist += math.pow(curPos[1] - loc['yCoord'], 2)
-            #We're not worried about orientation for location matching
-            #use a fraction of the orientation in case we get two named
+            # We're not worried about orientation for location matching
+            # use a fraction of the orientation in case we get two named
             # locations with the same x/y and different orientations
             # needs to be a very small fraction since rotation uses a different unit measurement
             # than location does (degrees vs. meters)
@@ -80,7 +80,7 @@ class Locations(object):
         
     def getLocationByName(self, name):
         sql = self._sqlQuery
-        sql +=  " WHERE `name` = %(name)s" 
+        sql += " WHERE `name` = %(name)s" 
         args = {'name': name }
         
         sql += " AND " + self._locationFilter
@@ -501,7 +501,7 @@ class Sensors(object):
         if sensorRange == None:
             activeLocation = Locations().getActiveExperimentLocation()
             if activeLocation == None:
-                sensorRange = [0,0]
+                sensorRange = [0, 0]
             else:
                 sensorRange = (activeLocation['startSensorRange'], activeLocation['endSensorRange'])
             
@@ -515,7 +515,7 @@ class Sensors(object):
                                                                                  'loc': self._locationTable }
                 
         self._sqlQuery += " WHERE ((`sensorId` >= %(min)s AND `sensorId` <= %(max)s) OR (`sensorId` >= 500 AND `sensorId` <= 799 )) " % {
-                                                                                      'min': sensorRange[0], 
+                                                                                      'min': sensorRange[0],
                                                                                       'max': sensorRange[1]
                                                                                       }
         
@@ -550,11 +550,11 @@ class Sensors(object):
         sql += "(`timestamp`, `sensorId`, `room`, `channel`, `value`, `status`) \
                     VALUES (%s, %s, %s, %s, %s, %s)"
         
-        args = (            timestamp, 
+        args = (timestamp,
                             sensorId,
-                            room, 
-                            channel, 
-                            value, 
+                            room,
+                            channel,
+                            value,
                             status)
         
         if self._sql.saveData(sql, args) >= 0:
@@ -778,9 +778,9 @@ class SQLDao(object):
             except Exception as e:
                 print >> sys.stderr, e
                 
-                #Access denied error == 1045, no reason to retry
+                # Access denied error == 1045, no reason to retry
                 if e.args[0] != 1045 and retry > 0:
-                    return self._getCursor(retry-1)
+                    return self._getCursor(retry - 1)
                 else:
                     raise e
         
@@ -825,11 +825,11 @@ class SQLDao(object):
             conn.commit()
             rowId = cursor.lastrowid
             cursor.close()
-            #conn.close()
+            # conn.close()
             return rowId
         except MySQLdb.Error, e:
             cursor.close()
-            #conn.close()
+            # conn.close()
             # Server connection was forcibly severed from the server side
             # retry the request
             if e.args[0] == 2006:
@@ -842,5 +842,5 @@ class SQLDao(object):
 
 if __name__ == '__main__':
     h = ActionHistory()
-    hi =h.getHistoryByTag('other')
+    hi = h.getHistoryByTag('other')
     print hi

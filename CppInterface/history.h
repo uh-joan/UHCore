@@ -10,9 +10,9 @@ public:
 	char* addPollingHistory(std::string ruleName, float delaySeconds);
 	void addHistoryAsync(std::string ruleName);
 	bool addHistory(std::string ruleName);
-protected:
-	std::string getModuleName();
-	std::string getClassName();
+private:
+	PyObject* pInstance;
+	PyObject* getDefaultClassInstance();
 };
 
 #endif //ACTION_HISTORY

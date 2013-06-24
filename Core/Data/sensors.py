@@ -30,9 +30,9 @@ class StateResolver(object):
     
     def evaluateRule(self, rule, value):
             try:
-                #Rules are in Java notation
+                # Rules are in Java notation
                 pyRule = rule.replace('&&', 'and').replace('||', 'or')
-                #Watts = float(value)
+                # Watts = float(value)
                 pyRule = pyRule.replace('Watts', str(value))
                 return eval(pyRule)
             except Exception as e:
@@ -45,7 +45,7 @@ class StateResolver(object):
                 
         for sensor in sensorList:
             state = {
-                     'id': sensor['sensorId'], 
+                     'id': sensor['sensorId'],
                      'value': sensor['value'],
                      'on': self.isSensorOn(sensor),
                      'state': self.getDisplayState(sensor)}
@@ -64,7 +64,7 @@ class StateResolver(object):
         sensors = et.parse(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'sensor_metadata.xml'))
         for sensor in sensorList:
             meta = None
-            if sys.version_info >= (2,7):
+            if sys.version_info >= (2, 7):
                 meta = sensors.getroot().find("./sensor[@id='%s']" % (sensor['id']))
             else:
                 for s in sensors.getroot().findall('sensor'):
@@ -72,7 +72,7 @@ class StateResolver(object):
                         meta = s
                         break
             if meta == None:
-                sensor['location'] = cc.toRobotHouse((0,0,0))
+                sensor['location'] = cc.toRobotHouse((0, 0, 0))
                 sensor['type'] = 'unknown'
                 continue
             x = float(meta.get('x', 0))
@@ -96,7 +96,7 @@ class StateResolver(object):
             else:
                 return 'Occupied'
         elif stype == 'TEMPERATURE_MCP9700_HOT' or stype == 'TEMPERATURE_MCP9700_COLD':
-            #return str((float(sensor['value']) - 0.5) * 100.0) + 'C'
+            # return str((float(sensor['value']) - 0.5) * 100.0) + 'C'
             return self.temperatureStatus(sensor)
         elif stype == 'POWER_CONSUMPTION_MONITOR':
             if float(sensor['value']) > 0.1:
@@ -153,8 +153,8 @@ class StateResolver(object):
             sql = "UPDATE `%s`" % (self._dao._sensorTable)
             sql += " SET `xCoord` = %(x)s, `yCoord` = %(y)s, `orientation` = %(d)s  WHERE `sensorId` = %(id)s" 
             args = {'x': x,
-                    'y': y, 
-                    'd': d, 
+                    'y': y,
+                    'd': d,
                     'id': sid}
             
             self._dao.saveData(sql, args)

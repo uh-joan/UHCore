@@ -63,6 +63,14 @@ class ROS(object):
             else:
                 return None
     
+    def getParam(self, paramName):
+        try:
+            self._ros.configureROS(packageName='rospy')
+            import rospy
+            return rospy.get_param(paramName)
+        except:
+            return []
+    
     def getTopics(self, baseFilter='', exactMatch=False, retry=10):
         # topics = self._rospy.get_published_topics(baseFilter)
         # if len(topics) == 0 and baseFilter.strip('/').find('/') == -1:
@@ -162,7 +170,7 @@ class ROS(object):
         if(rosMaster == None and ros_config.has_key('rosMaster')):
             rosMaster = ros_config['rosMaster']
         else:
-            #TODO: error handling
+            # TODO: error handling
             pass
 
         for k, v in ROS.parseRosBash(version).items():
@@ -270,7 +278,7 @@ class Transform(object):
             toTopic = self._defaultTo
         
         """
-        Waits for the /base_footprint to /map transform to be availalble and 
+        Waits for the /fromTopic to /toTopic transform to be availalble and 
         returns two tuples: (x, y, z) and a quaternion ( rx, ry, rz, rxy)
         Note: z values are 0 for 2D mapping and navigation.
         """
@@ -285,7 +293,7 @@ class Transform(object):
                 try:
                     self._listener.waitForTransform(toTopic, fromTopic, now, self._rospy.Duration(1.0))
                 except self._tf.Exception as e:
-                    #if str(e) != 'Unable to lookup transform, cache is empty, when looking up transform from frame [' + baseTopic + '] to frame [' + mapTopic + ']':
+                    # if str(e) != 'Unable to lookup transform, cache is empty, when looking up transform from frame [' + baseTopic + '] to frame [' + mapTopic + ']':
                     print >> sys.stderr, "Error while waiting for transform: " + str(e)
                     return ((None, None, None), None)
             

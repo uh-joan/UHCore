@@ -5,36 +5,20 @@
 #include <iostream>
 #include <stdio.h>
 
-Robot::Robot(std::string modulePath, std::string robotName, RobotType type) :
+Robot::Robot(std::string modulePath, std::string robotName) :
 		PythonInterface(modulePath) {
 	Robot::name = robotName;
-	Robot::type = type;
+	Robot::pInstance = NULL;
 }
 
-std::string Robot::getModuleName() {
-	switch (Robot::type) {
-	case (Robot::CareOBot):
-		return "Robots.careobot";
-	case (Robot::Sunflower):
-		return "Robots.sunflower";
-	default:
-		return "Robots.robot";
+PyObject* Robot::getDefaultClassInstance() {
+	if (pInstance == NULL) {
+		PyObject* pClass = getClassObject("Robots.robotFactory", "Factory");
+		pInstance = callMethod(pClass, "getRobot", "(s)", Robot::name.c_str());
+		Py_DECREF(pClass);
 	}
-}
 
-std::string Robot::getClassName() {
-	switch (Robot::type) {
-	case (Robot::CareOBot):
-		return "CareOBot";
-	case (Robot::Sunflower):
-		return "Sunflower";
-	default:
-		return "Generic";
-	}
-}
-
-PyObject* Robot::getConstructorArgs() {
-	return PyString_FromString(Robot::name.c_str());
+	return pInstance;
 }
 
 void Robot::setLight(int color[]) {
@@ -82,7 +66,8 @@ std::string Robot::setComponentState(std::string name, std::string value) {
 	return "Error";
 }
 
-std::vector<Robot::Position> Robot::getComponentPositions(std::string componentName) {
+std::vector<Robot::Position> Robot::getComponentPositions(
+		std::string componentName) {
 	PyObject *pValue = callMethod("getComponentPositions", componentName);
 	/** pValue = {folded:(0.0, 1.1, ...)), wave:(in, out), joint_names:('elbo', 'wrist'), ...} **/
 
@@ -154,7 +139,7 @@ Robot::State Robot::getComponentState(std::string componentName) {
 		} else {
 			s.name = PyString_AsString(PySequence_GetItem(pValue, 0));
 			PyObject* values = PySequence_GetItem(pValue, 1);
-			if(PyDict_Check(values)) {
+			if (PyDict_Check(values)) {
 				PyObject* key = PyString_FromString("goals");
 				s.goals = parseDoubleArray(PyDict_GetItem(values, key));
 				Py_DecRef(key);

@@ -76,7 +76,7 @@ class SensorLog(PollingProcessor):
             print "Started updating database for %s sensor changes" % (self._name)
         else:
             print "Started updating database for [unknown] sensor changes"
-        self._addPollingProcessor('sensorHistory', self.checkUpdateSensors, (self._channels, ), 0.01)
+        self._addPollingProcessor('sensorHistory', self.checkUpdateSensors, (self._channels,), 0.01)
 
     def stop(self):
         if self._name != '':
@@ -94,15 +94,15 @@ class SensorLog(PollingProcessor):
             if self._logCache[k]['status'] != channels[k]['status']:
                 timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 success = self._dao.saveSensorLog(
-                                                  channels[k]['id'], 
-                                                  channels[k]['value'], 
+                                                  channels[k]['id'],
+                                                  channels[k]['value'],
                                                   channels[k]['status'],
                                                   timestamp,
                                                   channels[k]['room'],
                                                   channels[k]['channel'])
                 if success:
                     print "Updated sensor log for %(id)s to %(status)s" % { 
-                                                                           'id':channels[k]['channel'], 
+                                                                           'id':channels[k]['channel'],
                                                                            'status': channels[k]['status']
                                                                            }
                     self._logCache[k]['value'] = channels[k]['value']

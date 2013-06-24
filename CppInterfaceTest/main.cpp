@@ -1,6 +1,7 @@
 #include "UHCore.h"
 #include <iostream>
 #include <sstream>
+#include "Python.h"
 
 using namespace std;
 
@@ -25,13 +26,18 @@ std::string vectorPrint(vector<T> v) {
 
 int main(int argc, char *argv[]) {
 
+	if (!Py_IsInitialized()) {
+		Py_Initialize();
+		std::cout << "Python Initialized" << std::endl;
+	}
+
 	std::string modulePath = "/home/nathan/git/UHCore/Core";
 //	ActionHistory *hist = new ActionHistory(modulePath);
 //	std::string ruleName = "testPythonInterface";
 //	std::cout << hist->addHistory(ruleName) << '\n';
 //	hist->addHistoryAsync(ruleName);
 
-	Robot *rob = new Robot(modulePath, "Care-O-Bot 3.2", Robot::CareOBot);
+	Robot *rob = new Robot(modulePath, "Care-O-Bot 3.2");
 	Robot::State state = rob->getComponentState("arm");
 
 	cout << "State: " << state.name << endl;

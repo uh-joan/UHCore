@@ -9,10 +9,6 @@ public:
 
 class Robot: public PythonInterface {
 public:
-	enum RobotType {
-		CareOBot, Sunflower
-	};
-
 	struct Location {
 		double x;
 		double y;
@@ -25,12 +21,12 @@ public:
 		std::vector<double> positions;
 	};
 
-	struct State : Position{
+	struct State: Position {
 		std::vector<std::string> joints;
 		std::vector<double> goals;
 	};
 
-	Robot(std::string modulePath, std::string robotName, RobotType robotType);
+	Robot(std::string modulePath, std::string robotName);
 	void setLight(int color[]);
 	char* getImage(std::string retFormat);
 	//std::string executeFunction(std::string funcName, std::map kwargs);

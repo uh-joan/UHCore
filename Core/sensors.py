@@ -52,7 +52,7 @@ class ZWaveHomeController(PollingProcessor):
 	# ZigBee thread main loop
 	def pollZWaveSensors(self):
 		try:
-			#http://192.168.1.109/devices
+			# http://192.168.1.109/devices
 			url = self._baseUrl
 			request = urllib2.Request(url)
 			base64string = base64.encodestring('%s:%s' % ('admin', 'admin')).replace('\n', '')
@@ -69,7 +69,7 @@ class ZWaveHomeController(PollingProcessor):
 			try:
 				sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == channelDescriptor)
 			except StopIteration:
-				#Only warn once, or we'll flood the console
+				# Only warn once, or we'll flood the console
 				if channelDescriptor not in self._warned:
 					print >> sys.stderr, "Warning: Unable to locate sensor record for zwave sensor ID: %s (%s)" % (str(channelDescriptor), str(device['name']))
 					self._warned.append(channelDescriptor)
@@ -79,7 +79,7 @@ class ZWaveHomeController(PollingProcessor):
 			_pin = sensor['name']
 			_id = sensor['sensorId']
 	
-			#order determines priority
+			# order determines priority
 			valueKeys = ['valueSensor', 'value']
 			
 			val = ''
@@ -92,17 +92,17 @@ class ZWaveHomeController(PollingProcessor):
 				_type = sensor['sensorTypeName']
 				_uuid = channelDescriptor
 				if _type == 'TEMPERATURE_MCP9700_HOT' or _type == 'TEMPERATURE_MCP9700_COLD':
-					_value = str((float( val) - 0.5) * 100.0)
+					_value = str((float(val) - 0.5) * 100.0)
 				else:
 					_value = val
 				
 				_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id })
 	
 				self._channels[_uuid] = { 
-										'id': _id, 
-										'room': _device, 
-										'channel': _pin, 
-										'value': _value, 
+										'id': _id,
+										'room': _device,
+										'channel': _pin,
+										'value': _value,
 										'status': _status
 										}
 
@@ -155,8 +155,8 @@ class ZWaveVeraLite(PollingProcessor):
 	# ZigBee thread main loop
 	def pollZWaveSensors(self):
 		try:
-			#http://192.168.1.158:3480/data_request?id=lu_sdata
-			#http://192.168.1.158:3480/data_request?id=lu_sdata&loadtime=1282441735&dataversion=441736333&timeout=60
+			# http://192.168.1.158:3480/data_request?id=lu_sdata
+			# http://192.168.1.158:3480/data_request?id=lu_sdata&loadtime=1282441735&dataversion=441736333&timeout=60
 			url = self._baseUrl
 			if self._loadTime != None and self._dataVersion != None:
 				url += '&loadtime=%(load)s&dataversion=(dataversion)s' % {'load': self._loadTime, 'dataversion': self._dataVersion }
@@ -174,7 +174,7 @@ class ZWaveVeraLite(PollingProcessor):
 			try:
 				sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == channelDescriptor)
 			except StopIteration:
-				#Only warn once, or we'll flood the console
+				# Only warn once, or we'll flood the console
 				if channelDescriptor not in self._warned:
 					print >> sys.stderr, "Warning: Unable to locate sensor record for zwave sensor ID: %s (%s)" % (str(channelDescriptor), str(device['name']))
 					self._warned.append(channelDescriptor)
@@ -196,17 +196,17 @@ class ZWaveVeraLite(PollingProcessor):
 				_type = sensor['sensorTypeName']
 				_uuid = channelDescriptor
 				if _type == 'TEMPERATURE_MCP9700_HOT' or _type == 'TEMPERATURE_MCP9700_COLD':
-					_value = str((float( val) - 0.5) * 100.0)
+					_value = str((float(val) - 0.5) * 100.0)
 				else:
 					_value = val
 				
 				_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id })
 	
 				self._channels[_uuid] = { 
-										'id': _id, 
-										'room': _device, 
-										'channel': _pin, 
-										'value': _value, 
+										'id': _id,
+										'room': _device,
+										'channel': _pin,
+										'value': _value,
 										'status': _status
 										}
 
@@ -271,7 +271,7 @@ class ZigBee(PollingProcessor):
 		try:
 			sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == str(mac) + str(channel))
 		except StopIteration:
-			#Only warn once, or we'll flood the console
+			# Only warn once, or we'll flood the console
 			if str(mac) + str(channel) not in self._warned:
 				print >> sys.stderr, "Warning: Unable to locate sensor record for zigbee sensor ID: %s" % (str(mac) + str(channel))
 				self._warned.append(str(mac) + str(channel))
@@ -285,17 +285,17 @@ class ZigBee(PollingProcessor):
 			_type = sensor['sensorTypeName']
 			_uuid = '%s_%s' % (mac , channel)
 			if _type == 'TEMPERATURE_MCP9700_HOT' or _type == 'TEMPERATURE_MCP9700_COLD':
-				_value = str((float( val) - 0.5) * 100.0)
+				_value = str((float(val) - 0.5) * 100.0)
 			else:
 				_value = val
 			
 			_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id })
 
 			self._channels[_uuid] = { 
-									'id': _id, 
-									'room': _device, 
-									'channel': _pin, 
-									'value': _value, 
+									'id': _id,
+									'room': _device,
+									'channel': _pin,
+									'value': _value,
 									'status': _status
 									}
 
@@ -333,14 +333,14 @@ class GEOSystem(PollingProcessor):
 
 	def pollGeoSystem(self):
 		rows = self._geoDao.getData(self._geoQuery)
-		#This appears to be needed or 'CALL exppower' doesn't update the power values,
+		# This appears to be needed or 'CALL exppower' doesn't update the power values,
 		# oddly, it updates the timestamp field though...
 		self._geoDao.close()
 		for row in rows:
 			try:
 				sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == str(row['ID']))
 			except StopIteration:
-				#Only warn once, or we'll flood the console
+				# Only warn once, or we'll flood the console
 				if row['ID'] not in self._warned:
 					print >> sys.stderr, "Warning: Unable to locate sensor record for geo sensor %s. ID: %s" % (row['Description'], row['ID'])
 					self._warned.append(row['ID'])
@@ -350,7 +350,7 @@ class GEOSystem(PollingProcessor):
 			_name = sensor['name']
 			_id = sensor['sensorId']
 
-			#Only warn once, or we'll flood the console
+			# Only warn once, or we'll flood the console
 			if _name != row['Description'] and row['ID'] not in self._warned:
 				print >> sys.stderr, 'Warning: Channel name differs from Geo-System description: %s / %s' % (_name, row['Description'])
 				self._warned.append(row['ID'])
@@ -363,10 +363,10 @@ class GEOSystem(PollingProcessor):
 				_state = 'Off'
 
 			self._channels[row['ID']] = { 
-										'id': _id, 
-										'room': _device, 
-										'channel': _name, 
-										'value': '%.1f' % row['Power'], 
+										'id': _id,
+										'room': _device,
+										'channel': _name,
+										'value': '%.1f' % row['Power'],
 										'status': _state 
 										}
 

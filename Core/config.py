@@ -43,62 +43,64 @@ server_config = {
 
 locations_config = {
   'ZUYD Apartment': {
-                     'sensors': ['ZWaveHomeController'], 
-                    'map': {
-                            'base':'zuyd.svg', 
-                            'scale':0.275, 
-                            'offset':(105, 300), 
-                            'rotation': -90 
+                     'sensors': ['ZWaveHomeController'],
+                     'map': {
+                                 'base':'zuyd.svg',
+                                 'scale':0.275,
+                                 'offset':(105, 300),
+                                 'rotation':-90 
                             }
                      },
   'UH Robot House': {
-                    'sensors': ['ZigBee', 'GEOSystem'], 
-                    'map': {
-                            'base':'RobotHouseMap.svg', 
-                            'scale':0.275, 
-                            'offset':(81, 245), 
-                            'rotation': -90 
+                     'sensors': ['ZigBee', 'GEOSystem'],
+                     'map': {
+                                'base':'RobotHouseMap.svg',
+                                'scale':0.275,
+                                'offset':(81, 245),
+                                'rotation':-90 
                             }
                      }
 }
 
 robot_config = {
                 'Care-O-Bot 3.2': {
-                                   'phidgets': {'topics': ['/range_0', '/range_1', '/range_2', '/range_3'], 'windowSize': 5},
-                                   'tray': { 'positions': {'raised': 'up', 'lowered': 'down'}, 'size': 20},
+                                   'phidgets': { 'topics': ['/range_0', '/range_1', '/range_2', '/range_3'], 'windowSize': 5, 'distance': 20 },
+                                   'tray': { 'positions': { 'raised': 'up', 'lowered': 'down' }},
                                    'head': { 
-                                            'positions': {
-                                                          'front': 'front', 
-                                                          'back': 'back'
-                                                          }, 
-                                            'camera': {
-                                                       'topic':'/stereo/right/image_color/compressed', 
+                                                'positions': { 'front': 'front', 'back': 'back' },
+                                                'camera': {
+                                                       'topic':'/stereo/right/image_color/compressed',
                                                        'rotate': {
-                                                                         'angle': 180, 
+                                                                  'angle': 180,
+                                                                  'distance': 90,
+                                                                  'amount': 180
+                                                                 }
+                                                       }
+                                            },
+                                   },
+                'Care-O-Bot 3.6': {
+                                   'phidgets': {'topics': ['/tray_sensors/range_0', '/tray_sensors/range_1', '/tray_sensors/range_2', '/tray_sensors/range_3'], 'windowSize': 5, 'distance': 10 },
+                                   'tray': { 'positions': {'raised': 'deliverup', 'lowered': 'store'}},
+                                   'head': { 
+                                                'positions': { 'front': 'front', 'back': 'back' },
+                                                'camera': {
+                                                       'topic':'/stereo/right/image_color/compressed',
+                                                       'rotate': {
+                                                                         'angle': 0,
                                                                          'distance': 90,
                                                                          'amount': 180
                                                                          }
                                                        }
                                             },
                                    },
-                'Care-O-Bot 3.6': {
-                                   'phidgets': {'topics': ['/tray_sensors/range_0', '/tray_sensors/range_1', '/tray_sensors/range_2', '/tray_sensors/range_3'], 'windowSize': 5},
-                                   'tray': { 'positions': {'raised': 'deliverup', 'lowered': 'store'}, 'size': 10},
-                                   'head': { 
-                                            'positions': {
-                                                          'front': 'front', 
-                                                          'back': 'back'
-                                                          },
-                                            'camera': {
-                                                       'topic':'/stereo/right/image_color/compressed', 
-                                                       'rotate': {
-                                                                         'angle': 0, 
-                                                                         'distance': 90,
-                                                                         'amount': 180
-                                                                         }
-                                                       }
-                                            },
-                                   }
+                'Sunflower 1-1': {
+                                   'tray': { 'positions': { 'raised': 'open', 'lowered': 'closed' }},
+                                   'head': { 'positions': { 'front': 'home', 'back': 'back_right' }},
+                                   },
+                'Sunflower 1-2': {
+                                   'tray': { 'positions': { 'raised': 'open', 'lowered': 'closed' }},
+                                   'head': { 'positions': { 'front': 'home', 'back': 'back_right' }},
+                                   },
                 }
 
 """ Note: While the defaults for {version} will be read from the setup.bash file, 
