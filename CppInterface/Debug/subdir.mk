@@ -6,19 +6,16 @@
 CPP_SRCS += \
 ../base.cpp \
 ../history.cpp \
-../main.cpp \
 ../robot.cpp 
 
 OBJS += \
 ./base.o \
 ./history.o \
-./main.o \
 ./robot.o 
 
 CPP_DEPS += \
 ./base.d \
 ./history.d \
-./main.d \
 ./robot.d 
 
 
