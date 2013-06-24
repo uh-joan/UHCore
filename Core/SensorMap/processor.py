@@ -8,10 +8,11 @@ class MapProcessor(object):
     _mapLock = RLock()
     _iconLock = RLock()
 
-    def __init__(self, baseMap='RobotHouseMap.svg'):
+    def __init__(self, map):
         self._root = os.path.dirname(os.path.realpath(__file__))
-        self._baseFile = os.path.join(self._root, baseMap)
-        self._sensorTypes = et.parse(os.path.join(self._root, 'type_icons.xml'))
+        self._baseFile = os.path.join(self._root, map['base'])
+        self._map = map
+        self._sensorTypes = et.parse(os.path.join(self._root, 'type_icons.xml'))        
 
     @property
     def mapBase(self):
@@ -91,7 +92,7 @@ class MapProcessor(object):
 
         root = self.mapBase.getroot()
         mapHeight = float(root.attrib['height'])
-        cc = CoordinateConvertor()
+        cc = CoordinateConvertor(self._map)
         
         for element in elements:
             if element.has_key('on'):
@@ -130,18 +131,18 @@ class MapProcessor(object):
         return ret
     
 class CoordinateConvertor(object):
-    """Convert between Robot House and SensorMap coordinate systems"""
+    """Convert between ROS MAP and SVG MAP coordinate systems"""
     
-    def __init__(self):
+    def __init__(self, transform):
         #This could be solved and combined into a single transformation,
         #but I left it this way so any changes to an individual transform could be 
         #easily corrected for
-        self._sensorMapToRHMapScale = 0.275
-        self._sensorMapToRHMapOffset = (81, 245) #in sensorMapUnits
-        self._sensorMapToRHLocRotation = -90
+        self._sensorMapToRHMapScale = transform['scale']
+        self._sensorMapToRHMapOffset = transform['offset'] #in sensorMapUnits
+        self._sensorMapToRHLocRotation = transform['rotation']
 
-        #from the map.yaml file
-        self._RHMapToRHLocScale = 0.05
+        #from the map.yaml file, combining these gets from real world coordinates to pgm pixels
+        self._RHMapToRHLocScale = 0.05 
         self._RHMapToRHLocOffset = (-8, -19.2) #in RHLoc units
         
     def toRobotHouse(self, (Mx, My, Mr)):
@@ -173,6 +174,13 @@ class CoordinateConvertor(object):
     def toSensorMap(self, (RHx, RHy, RHr)):
         """x and y are in meters"""
         """r is assumed in radians, use d or r suffix to use others (90d/6R)"""
+        
+        # convert from real world to PGM
+        # (x - -8) / 0.05, (y - -19.2) / 0.05
+        
+        # convert from PGM to SVG
+        # (x / 0.275) - 295, (y / 0.275) - 505
+        
         Rx = (RHx - self._RHMapToRHLocOffset[0]) / self._RHMapToRHLocScale
         Ry = (RHy - self._RHMapToRHLocOffset[1]) / self._RHMapToRHLocScale
         Mx = (Rx - self._sensorMapToRHMapOffset[0]) / self._sensorMapToRHMapScale

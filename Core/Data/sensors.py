@@ -54,13 +54,13 @@ class StateResolver(object):
             
         return states
     
-    def appendSensorMetadata(self, sensorList):
+    def appendSensorMetadata(self, sensorList, transform):
         """adds location and type data to a list of sensors"""
-        """this data eventually needs to go in the database"""
+        """this REALLY needs to go in the database"""
         from xml.etree import ElementTree as et
         from SensorMap.processor import CoordinateConvertor
         import os
-        cc = CoordinateConvertor()
+        cc = CoordinateConvertor(transform)
         sensors = et.parse(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'sensor_metadata.xml'))
         for sensor in sensorList:
             meta = None

@@ -33,7 +33,8 @@ class ActionHistory(object):
 
     def addHistory(self, ruleName, imageBytes=None, imageType=None):
         
-        cob = CareOBot()
+        from Robots.robotFactory import Factory
+        cob = Factory.getCurrentRobot()
         dao = DataAccess()
         dateNow = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         location = dao.getRobotByName(cob.name)['locationId']
@@ -72,16 +73,16 @@ class SensorLog(PollingProcessor):
                 
     def start(self):
         if self._name != '':
-            print "Started polling sensor changes for %s" % (self._name)
+            print "Started updating database for %s sensor changes" % (self._name)
         else:
-            print "Started polling sensor changes"
+            print "Started updating database for [unknown] sensor changes"
         self._addPollingProcessor('sensorHistory', self.checkUpdateSensors, (self._channels, ), 0.01)
 
     def stop(self):
         if self._name != '':
-            print "Stopped polling sensor changes for %s" % (self._name)
+            print "Stopped updating database for %s sensor changes" % (self._name)
         else:
-            print "Stopped polling sensor changes"
+            print "Stopped updating database for [unknown] sensor changes"
 
         self._removePollingProcessor('sensorHistory')
 
@@ -112,24 +113,50 @@ if __name__ == '__main__':
     import sys
     import config
     import sensors
-    z = sensors.ZigBee(config.server_config['udp_listen_port'])
-    g = sensors.GEOSystem(config.server_config['mysql_geo_server'],
+    from Data.dataAccess import Locations
+    from sensors import GEOSystem, ZigBee, ZWaveHomeController, ZWaveVeraLite
+        
+    activeLocation = Locations().getActiveExperimentLocation() 
+    
+    if activeLocation == None:
+        print "Unable to determine active experiment Location"
+        exit
+    
+    sensorPollers = []
+    dataUpdaters = []
+    for sensorType in config.locations_config[activeLocation['location']]['sensors']:
+        sensor = None
+        if sensorType == 'ZWaveHomeController':
+            sensor = ZWaveHomeController(config.server_config['zwave_ip'])
+        elif sensorType == 'ZWaveVeraLite':
+            sensor = ZWaveVeraLite(config.server_config['zwave_ip'], config.server_config['zwave_port'])
+        elif sensorType == 'ZigBee':
+            sensor = ZigBee(config.server_config['udp_listen_port'])
+        elif sensorType == 'GEOSystem':
+            sensor = GEOSystem(config.server_config['mysql_geo_server'],
                             config.server_config['mysql_geo_user'],
                             config.server_config['mysql_geo_password'],
                             config.server_config['mysql_geo_db'],
                             config.server_config['mysql_geo_query'])
-    sz = SensorLog(z.channels)
-    sg = SensorLog(g.channels)
-    z.start()
-    g.start()
-    sz.start()
-    sg.start()
+
+        if sensor != None:
+            sensorPollers.append(sensor)
+            dataUpdaters.append(SensorLog(sensor.channels, sensor.__class__.__name__))
+        
+    for sensorPoller in sensorPollers:
+        sensorPoller.start()
+    
+    for dataUpdater in dataUpdaters:
+        dataUpdater.start()
+    
     while True:
         try:
             sys.stdin.read()
         except KeyboardInterrupt:
             break
-    sz.stop()
-    sg.stop()
-    g.stop()
-    z.stop()
+
+    for sensorPoller in sensorPollers:
+        sensorPoller.stop()
+    
+    for dataUpdater in dataUpdaters:
+        dataUpdater.stop()

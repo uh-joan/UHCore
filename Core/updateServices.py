@@ -7,7 +7,8 @@ from config import server_config
 import sys
 
 if __name__ == '__main__':
-    robot = CareOBot()
+    from Robots.robotFactory import Factory
+    robot = Factory.getCurrentRobot()
     z = sensors.ZigBee(server_config['udp_listen_port'])
     g = sensors.GEOSystem(server_config['mysql_geo_server'],
                             server_config['mysql_geo_user'],

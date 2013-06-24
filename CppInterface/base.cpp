@@ -4,6 +4,7 @@
 #include <iostream>
 #include <exception>
 #include <stdio.h>
+#include <stdarg.h>
 
 PythonInterface::PythonInterface(std::string modulePath) {
 	PythonInterface::modulePath = modulePath;
@@ -27,7 +28,7 @@ PyObject* PythonInterface::getConstructorArgs() {
 }
 
 PyObject* PythonInterface::getClassInstance() {
-	if (pInstance == NULL) {
+	if (PythonInterface::pInstance == NULL) {
 		if (!modulePath.empty()) {
 
 			PyRun_SimpleString("import sys");
@@ -51,29 +52,27 @@ PyObject* PythonInterface::getClassInstance() {
 		Py_DECREF(pDict);
 
 		PyObject *pClassArgs = getConstructorArgs();
-
-		pInstance = PyObject_CallObject(pClass, pClassArgs);
-		Py_DECREF(pClass);
-		if (pClassArgs != NULL) {
-			Py_DECREF(pClassArgs);
+		if(pClassArgs != NULL && !PyTuple_Check(pClassArgs))
+		{
+			PyObject *temp = pClassArgs;
+			pClassArgs = PyTuple_Pack(1, temp);
+			Py_DECREF(temp);
 		}
+
+		PythonInterface::pInstance = PyObject_CallObject(pClass, pClassArgs);
+		Py_DECREF(pClass);
+		Py_XDECREF(pClassArgs);
+
+		std::cout << modName << " Initialized" << std::endl;
 	}
 
-	return pInstance;
+	return PythonInterface::pInstance;
 }
 
-PyObject* PythonInterface::callMethod(std::string methodName,
-		std::string arg1) {
-	char* f = strdup("(s)");
-	char* m = strdup(methodName.c_str());
-	PyObject *pValue = PyObject_CallMethod(getClassInstance(), m, f,
-			arg1.c_str());
+PyObject* PythonInterface::callMethod(std::string methodName) {
+	return callMethod(methodName, "", 0);
+}
 
-	if (pValue != NULL) {
-		return pValue;
-	} else {
-		std::cout << "Error while calling method" << '\n';
-		PyErr_Print();
-		return NULL;
-	}
+PyObject* PythonInterface::callMethod(std::string methodName, std::string value) {
+	return callMethod(methodName, "(s)", strdup(value.c_str()));
 }
