@@ -87,24 +87,26 @@ class StateResolver(object):
         stype = sensor['sensorTypeName']
         if stype == 'CONTACT_REED':
             if float(sensor['value']) == 1:
-                return 'Open'
+                state =  'Open'
             else:
-                return 'Closed'
+                state =  'Closed'
         elif stype == 'CONTACT_PRESSUREMAT':
             if float(sensor['value']) == 1:
-                return 'Free'
+                state =  'Free'
             else:
-                return 'Occupied'
+                state =  'Occupied'
         elif stype == 'TEMPERATURE_MCP9700_HOT' or stype == 'TEMPERATURE_MCP9700_COLD':
             # return str((float(sensor['value']) - 0.5) * 100.0) + 'C'
-            return self.temperatureStatus(sensor)
+            state =  self.temperatureStatus(sensor)
         elif stype == 'POWER_CONSUMPTION_MONITOR':
-            if float(sensor['value']) > 0.1:
-                return 'On'
+            if self.evaluateRule(sensor['sensorRule'], sensor['value']):
+                state =  'On'
             else:
-                return 'Off'
+                state =  'Off'
         else:
-            return str(sensor['value'])
+            state =  str(sensor['value'])
+
+        return state.capitalize()        
 
     def temperatureStatus(self, sensor):
         if not self._movingAverageCache.has_key(sensor['sensorId']):

@@ -221,11 +221,10 @@ class PoseUpdater(robot.PoseUpdater):
             
             averages.append(sum(self._rangeHistory[topic]) / len(self._rangeHistory[topic]))
         
-        
         if any(map(lambda x: x <= self._rangeThreshold, averages)):
-            trayIsEmpty = 'full'
+            trayIsEmpty = 'Full'
         else:
-            trayIsEmpty = 'empty'
+            trayIsEmpty = 'Empty'
    
         return (trayIsEmpty, trayIsEmpty)
 
