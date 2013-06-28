@@ -3,7 +3,7 @@ import os
 
 import rosHelper
 
-class ROS(object):
+class ROSMulti(object):
     def __init__(self, version=None, packagePath=None, packageName=None, rosMaster=None, overlayPath=None):
         localPipe, remotePipe = Pipe()
         self._pipe = localPipe

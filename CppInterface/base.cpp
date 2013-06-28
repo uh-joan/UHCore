@@ -71,11 +71,3 @@ PyObject* PythonInterface::getClassInstance(std::string moduleName, std::string 
 	return pObjectCache[moduleName + className];
 }
 
-PyObject* PythonInterface::callMethod(PyObject* pInstance, std::string methodName) {
-	return callMethod(pInstance, methodName, "", 0);
-}
-
-PyObject* PythonInterface::callMethod(PyObject* pInstance, std::string methodName,
-		std::string value) {
-	return callMethod(pInstance, methodName, "(s)", strdup(value.c_str()));
-}

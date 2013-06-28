@@ -129,7 +129,7 @@ class Robot(object):
         self._robInt.runComponent('light', colour)
 
     def setComponentState(self, name, value, blocking=True):
-        if robot_config[self.name].has_key(name) and robot_config[self.name][name].has_key('positions') and robot_config[self.name][name]['position'].has_key(value):
+        if robot_config[self.name].has_key(name) and robot_config[self.name][name].has_key('positions') and robot_config[self.name][name]['positions'].has_key(value):
             value = robot_config[self.name][name]['positions'][value]
         
         status = self._robInt.runComponent(name, value, None, blocking)

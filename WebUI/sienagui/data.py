@@ -10,12 +10,13 @@ class Login(object):
         
     def GET(self, unick=''):
 
-        sql= 'SELECT userId, languageId FROM Users WHERE nickname=%(nickname)s'
-        args = {'nickname': unick}
+        user = self._dao.users.getUserByNickName(unick)
+        if user == None:
+            return None
 
-        result = self._dao.sql.getSingle(sql, args, {'userId':-1, 'languageId': -1})
-        
-        ret = "%(userId)s,%(languageId)s" % result
+        sessionId = self._dao.users.setActiveUser(user['userId'])
+                
+        ret = "%(userId)s,%(languageId)s" % { 'userId':user['userId'], 'languageId':user['languageId'] }
         return ret
 
 class Options(object):
@@ -36,6 +37,7 @@ class Options(object):
                 ActionPossibility_APOptions o ON a.idActionPossibilityOptions = o.idOpt \
             WHERE \
                 o.idAP = %(sonid)s"
+
         args = {'sonid': pid }
 
         results = self._dao.sql.getData(sql, args)
@@ -48,12 +50,11 @@ class Command(object):
         self._dao = DataAccess()
         
     def GET(self, cmd_id='-1'):
-
-        sql = "UPDATE `Sensors` SET `value`='1' WHERE `sensorId`=%(cmd)s"
-        args = {'cmd': cmd_id }
-
-        self._dao.sql.saveData(sql, args)
-        return "OK"
+        
+        if self._dao.sensors.saveSensorLog(cmd_id, 1, 'On'):
+            return "OK"
+        
+        return "ERROR"
         
 class ExpressionRequest(object):
     exposed = True
@@ -63,7 +64,14 @@ class ExpressionRequest(object):
         
     def GET(self, cmd_id='-1'):
 
-        sql="SELECT expression FROM GUIexpression WHERE ison='1' limit 1;"
+        sql=" \
+            SELECT \
+                expression \
+            FROM \
+                GUIexpression \
+            WHERE \
+                ison='1' \
+            LIMIT 1"
 
         result = self._dao.sql.getSingle(sql)
         if result == None:
@@ -78,14 +86,31 @@ class FullActionList(object):
         self._dao = DataAccess()
         self._likelihood = siena_config['likelihood']
         
-    def GET(self):
+    def GET(self, session='1'):
 
-        sql="SELECT label_text, phrase, type_description, likelihood, apId, location_name, precondId FROM \
-             (SELECT (SELECT message FROM Messages WHERE messageId=a.ap_text and languageId=1) AS label_text, \
-             ActionPossibilityType.text AS type_description,a.parentId,a.apId AS apId,(SELECT message FROM Messages WHERE messageId=a.ap_phrase and languageId=1) AS phrase, \
-             a.likelihood, a.precondId, Locations.name as location_name, Locations.locationId FROM ActionPossibilities a, ActionPossibilityType, Locations WHERE \
-             a.apTypeId = ActionPossibilityType.apTypeId AND parentId IS null AND Locations.locationId = a.locationId AND a.likelihood > %(threshold)s ) AS pinco"
-        args = {'threshold': self._likelihood }
+        sql=" \
+            SELECT \
+                lt.message as label_text, \
+                p.message as phrase, \
+                apt.text as type_description, \
+                ap.likelihood, \
+                ap.apId, \
+                l.name as location_name, \
+                ap.precondId \
+            FROM \
+                ActionPossibilities ap \
+                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
+                INNER JOIN Locations l ON ap.locationId = l.locationId \
+                INNER JOIN SessionControl s \
+                INNER JOIN Users u ON u.userId = s.SessionUser \
+                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
+                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId \
+            WHERE \
+                s.sessionId = %(session)s AND \
+                ap.parentId IS NULL AND \
+                ap.likelihood > %(threshold)s"
+                
+        args = {'threshold': self._likelihood, 'session': session }
 
         results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
@@ -97,15 +122,35 @@ class RobotActions(object):
         self._dao = DataAccess()
         self._likelihood = siena_config['likelihood']
         
-    def GET(self, ulang='1', robot='Care-O-Bot 3.6'):
+    def GET(self, session='1', ulang=None, robot=None):
 
-        sql="SELECT label_text, phrase, type_description, likelihood, apId, precondId FROM \
-             (SELECT (SELECT message FROM Messages WHERE messageId=a.ap_text and languageId=%(lang)s) AS label_text, \
-             ActionPossibilityType.text AS type_description,a.parentId,a.apId AS apId,(Select message FROM Messages WHERE messageId=a.ap_phrase AND languageId=%(lang)s) AS phrase, \
-             a.likelihood, a.precondId from ActionPossibilities a, ActionPossibilityType, Locations WHERE \
-             a.apTypeId = ActionPossibilityType.apTypeId AND parentId IS null AND Locations.locationId = a.locationId AND Locations.locationId=(SELECT locationId FROM Robot WHERE robotName=%(robot)s) AND a.likelihood > %(threshold)s ) AS pinco ORDER BY likelihood DESC"
+        sql=" \
+            SELECT \
+                lt.message as label_text, \
+                p.message as phrase, \
+                apt.text as type_description, \
+                ap.likelihood, \
+                ap.apId, \
+                ap.precondId \
+            FROM \
+                ActionPossibilities ap \
+                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
+                INNER JOIN Locations l ON ap.locationId = l.locationId \
+                INNER JOIN SessionControl s \
+                INNER JOIN Users u ON u.userId = s.SessionUser \
+                INNER JOIN Robot r ON l.locationId = r.locationId \
+                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
+                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId \
+            WHERE \
+                s.sessionId = %(session)s AND \
+                ap.parentId IS NULL AND \
+                r.robotName = %(robot)s AND \
+                ap.likelihood > %(threshold)s \
+            ORDER BY \
+                ap.likelihood \
+            DESC"
         
-        args = {'threshold': self._likelihood, 'lang': ulang, 'robot': robot }
+        args = {'threshold': self._likelihood, 'robot': 'simulated', 'session':session }
 
         results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
@@ -117,15 +162,33 @@ class SonsActions(object):
         self._dao = DataAccess()
         self._likelihood = siena_config['likelihood']
         
-    def GET(self, ulang='-1', pid='-1'):
+    def GET(self, session='1', ulang=None, pid='-1'):
 
-        sql="SELECT label_text, phrase, type_description, precondId, likelihood, apId FROM \
-             (SELECT (SELECT message FROM Messages WHERE messageId=a.ap_text and languageId=%(lang)s) AS label_text, \
-             ActionPossibilityType.text AS type_description,a.parentId,a.apId AS apId,(SELECT message FROM Messages where messageId=a.ap_phrase AND languageId=%(lang)s) AS phrase, \
-             a.likelihood, a.precondId FROM ActionPossibilities a, ActionPossibilityType WHERE \
-             a.apTypeId = ActionPossibilityType.apTypeId AND parentId = %(parent)s AND a.likelihood > %(threshold)s) AS pinco"
+        sql=" \
+            SELECT \
+                lt.message as label_text, \
+                p.message as phrase, \
+                apt.text as type_description, \
+                ap.likelihood, \
+                ap.apId, \
+                ap.precondId \
+            FROM \
+                ActionPossibilities ap \
+                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
+                INNER JOIN Locations l ON ap.locationId = l.locationId \
+                INNER JOIN SessionControl s \
+                INNER JOIN Users u ON u.userId = s.SessionUser \
+                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
+                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId \
+            WHERE \
+                s.sessionId = %(session)s AND \
+                ap.parentId = %(parent)s AND \
+                ap.likelihood > %(threshold)s \
+            ORDER BY \
+                ap.likelihood \
+            DESC"
         
-        args = {'threshold': self._likelihood, 'lang': ulang, 'parent': pid }
+        args = {'threshold': self._likelihood, 'session':session, 'parent': pid }
 
         results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
@@ -137,15 +200,33 @@ class UserActions(object):
         self._dao = DataAccess()
         self._likelihood = siena_config['likelihood']
         
-    def GET(self, uid='-1', ulang='-1'):
+    def GET(self, session='1', uid=None, ulang=None):
 
-        sql="SELECT label_text, phrase, type_description, likelihood, apId, precondId FROM \
-             (SELECT (SELECT message FROM Messages WHERE messageId=a.ap_text and languageId=%(lang)s) AS label_text, \
-             ActionPossibilityType.text AS type_description,a.parentId,a.apId AS apId,(SELECT message FROM Messages where messageId=a.ap_phrase and languageId=1) AS phrase, \
-             a.likelihood, a.precondId FROM ActionPossibilities a, ActionPossibilityType, Locations WHERE \
-             a.apTypeId = ActionPossibilityType.apTypeId AND parentId IS null AND Locations.locationId = a.locationId AND Locations.locationId=(SELECT locationId FROM Users WHERE userId=%(user)s) AND a.likelihood > %(threshold)s ) AS pinco ORDER BY likelihood DESC"
+        sql=" \
+            SELECT \
+                lt.message as label_text, \
+                p.message as phrase, \
+                apt.text as type_description, \
+                ap.likelihood, \
+                ap.apId, \
+                ap.precondId \
+            FROM \
+                ActionPossibilities ap \
+                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
+                INNER JOIN Locations l ON ap.locationId = l.locationId \
+                INNER JOIN SessionControl s \
+                INNER JOIN Users u ON u.userId = s.SessionUser \
+                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
+                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId \
+            WHERE \
+                s.sessionId = %(session)s AND \
+                ap.parentId IS NULL AND \
+                ap.likelihood > %(threshold)s\
+            ORDER BY \
+                ap.likelihood \
+            DESC"
         
-        args = {'threshold': self._likelihood, 'lang': ulang, 'user': uid }
+        args = {'threshold': self._likelihood, 'session': session }
 
         results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
@@ -158,7 +239,14 @@ class SetParameter(object):
         
     def GET(self, opt_id='-1', val='-1'):
 
-        sql = 'UPDATE ActionPossibilityOptions SET SelectedValue=%(value)s WHERE idActionPossibilityOptions=%(optId)s'
+        sql = " \
+            UPDATE \
+                ActionPossibilityOptions \
+            SET \
+                SelectedValue = %(value)s \
+            WHERE \
+                idActionPossibilityOptions = %(optId)s"
+
         args = {'value': val, 'optId': opt_id }
 
         self._dao.sql.saveData(sql, args)

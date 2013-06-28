@@ -26,6 +26,7 @@ std::string vectorPrint(vector<T> v) {
 
 int main(int argc, char *argv[]) {
 
+	// This has suddenly become necessary, will be fixed in a later version
 	if (!Py_IsInitialized()) {
 		Py_Initialize();
 		std::cout << "Python Initialized" << std::endl;
@@ -37,7 +38,8 @@ int main(int argc, char *argv[]) {
 //	std::cout << hist->addHistory(ruleName) << '\n';
 //	hist->addHistoryAsync(ruleName);
 
-	Robot *rob = new Robot(modulePath, "Care-O-Bot 3.2");
+	Robot *rob = new Robot(modulePath); //use the current robot specified in the sessioncontrol table
+
 	Robot::State state = rob->getComponentState("arm");
 
 	cout << "State: " << state.name << endl;
@@ -45,6 +47,20 @@ int main(int argc, char *argv[]) {
 	cout << " Positions: " << vectorPrint(state.positions) << endl;
 	cout << " Goals: " << vectorPrint(state.goals) << endl;
 
+	std::string result = rob->setComponentState("arm", "wave", true);
+	cout << "Set arm to 'wave', result: " << result << endl;
+
+	result = rob->setComponentState("tray", "raised", true);
+	cout << "Set tray to 'raised', result: " << result << endl;
+
+	int red[] = {1,0,0};
+	rob->setLight(red);
+	cout << "Set light to [1,0,0]" << endl;
+
+	rob->setLight("white");
+	cout << "Set light to 'white'" << endl;
+
 	cout << "Done" << endl;
+
 	return 0;
 }

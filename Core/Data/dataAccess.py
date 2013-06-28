@@ -1,4 +1,4 @@
-import MySQLdb, sys, math
+import MySQLdb, sys, math, time
 
 class Locations(object):
     def __init__ (self, robotTable=None, userTable=None, locationTable=None, locationRange=None):
@@ -197,6 +197,18 @@ class Users(object):
 
         return self._sql.getSingle(sql, args)
     
+    def getUserByNickName(self, userName):
+        sql = "SELECT `%(user)s`.*, %(loc)s.name as 'locationName' \
+               FROM `%(user)s` \
+               INNER JOIN `%(loc)s` ON %(loc)s.`locationId` = `%(user)s`.`locationId`" % {
+                              'user': self._userTable,
+                              'loc': self._locationTable
+                              }
+        sql += " WHERE `nickname` = %(name)s"
+        args = {'name': userName }
+
+        return self._sql.getSingle(sql, args)
+    
     def getUserByName(self, userName):
         sql = "SELECT `%(user)s`.*, %(loc)s.name as 'locationName' \
                FROM `%(user)s` \
@@ -223,16 +235,34 @@ class Users(object):
 
         return self._sql.getData(sql, args)
     
-    def getActiveUserName(self):
-        sql = "SELECT `%(user)s`.`nickname` \
+    def setActiveUser(self, uid, sid=1):
+            sql = 'UPDATE `%s` ' % (self._sessionControlTable)
+            sql += ' \
+                    SET \
+                        `sessionTime` = %(time)s, \
+                        `sessionDate` = %(date)s, \
+                        `SessionUser` = %(user)s \
+                    WHERE \
+                        `sessionId` = %(sid)s'
+            
+            args = { 'time': time.strftime('%X'), 'date': time.strftime('%Y-%m-%d'), 'user': uid, 'sid': sid }
+            
+            if self._sql.saveData(sql, args) >= 0:
+                return sid
+            else:
+                return None
+    
+    def getActiveUser(self):
+        sql = "SELECT `%(user)s`.*, %(loc)s.name as 'locationName' \
                FROM `%(user)s` \
-               WHERE `%(user)s`.`userId` IN ( \
-                        SELECT `%(session)s`.`sessionUser` \
-                        FROM `%(session)s` )" % {
+               INNER JOIN `%(loc)s` ON %(loc)s.`locationId` = `%(user)s`.`locationId` \
+               INNER JOIN `%(session)s` s ON `%(session)s`.`SessionUser` = `%(user)s`.`userId`" % {
                               'user': self._userTable,
-                              'session': self._sessionControlTable
-                              }       
-        args = None
+                              'loc': self._locationTable,
+                              'session': self._sessionControlTable 
+                              }
+        sql += " WHERE s.`sessionId` = %(sid)s"
+        args = {'sid': 1}
         
         return self._sql.getData(sql, args)
     
@@ -265,18 +295,7 @@ class Users(object):
                 }
         
         return self._sql.saveData(sql, args) >= 0
-    
-    def setSessionControlTime(self, time):
-        sql = 'UPDATE `%s` ' % (self._sessionControlTable)
-        sql += 'SET `sessionTime` = %(time)s'
-        
-        args = { 'time': time }
-        
-        if self._sql.saveData(sql, args) >= 0:
-            return True
-        else:
-            return False
-        
+            
     def getPersonaValues(self):
         sql = "SELECT `%(persona)s`.* \
                FROM `%(persona)s` \
@@ -814,7 +833,10 @@ class SQLDao(object):
             if e.args[0] == 2006:
                 return self.getData(sql, args, trimString)
             
-            print "Error %d: %s" % (e.args[0], e.args[1])
+            if len(e.args) > 1:
+                print "Error %d: %s" % (e.args[0], e.args[1])
+            else:
+                print "Error %s" & e.args
             return []
         
     def saveData(self, sql, args=None):

@@ -5,6 +5,12 @@
 #include <iostream>
 #include <stdio.h>
 
+Robot::Robot(std::string modulePath) :
+		PythonInterface(modulePath) {
+	Robot::name = "";
+	Robot::pInstance = NULL;
+}
+
 Robot::Robot(std::string modulePath, std::string robotName) :
 		PythonInterface(modulePath) {
 	Robot::name = robotName;
@@ -14,7 +20,11 @@ Robot::Robot(std::string modulePath, std::string robotName) :
 PyObject* Robot::getDefaultClassInstance() {
 	if (pInstance == NULL) {
 		PyObject* pClass = getClassObject("Robots.robotFactory", "Factory");
-		pInstance = callMethod(pClass, "getRobot", "(s)", Robot::name.c_str());
+		if (Robot::name != "") {
+			pInstance = callMethod(pClass, "getRobot", Robot::name.c_str());
+		} else {
+			pInstance = callMethod(pClass, "getCurrentRobot");
+		}
 		Py_DECREF(pClass);
 	}
 
@@ -23,6 +33,11 @@ PyObject* Robot::getDefaultClassInstance() {
 
 void Robot::setLight(int color[]) {
 	PyObject *pValue = callMethod("setLight", "([i,i,i])", color);
+	Py_XDECREF(pValue);
+}
+
+void Robot::setLight(std::string color) {
+	PyObject *pValue = callMethod("setLight", color);
 	Py_XDECREF(pValue);
 }
 
@@ -50,8 +65,39 @@ Robot::Location Robot::getLocation() {
 	return l;
 }
 
-std::string Robot::setComponentState(std::string name, std::string value) {
-	PyObject *pValue = callMethod("setComponentState", value);
+std::string Robot::setComponentState(std::string name,
+		std::vector<double> jointGoals, bool blocking) {
+
+	std::string format = "(s, [";
+	for (int i = 0; i < jointGoals.size(); i++) {
+		format += "i,";
+	}
+	format = format.substr(0, format.length() - 1) + "], b)";
+
+	double goals[jointGoals.size()];
+	std::copy(jointGoals.begin(), jointGoals.end(), goals);
+	char* n = strdup(name.c_str());
+	char* f = strdup(format.c_str());
+
+	PyObject *pValue = callMethod("setComponentState", n, f, goals, blocking);
+	/** pValue = "SUCCESS" **/
+
+	if (pValue != NULL) {
+		char* ret = PyString_AsString(pValue);
+		Py_DECREF(pValue);
+		return ret;
+	} else {
+		std::cout << "Error while calling method" << '\n';
+		PyErr_Print();
+	}
+
+	return "Error";
+}
+
+std::string Robot::setComponentState(std::string name, std::string value, bool blocking) {
+	char* n = strdup(name.c_str());
+	char* v = strdup(value.c_str());
+	PyObject *pValue = callMethod("setComponentState", "(s,s, b)", n, v, blocking);
 	/** pValue = "SUCCESS" **/
 
 	if (pValue != NULL) {
