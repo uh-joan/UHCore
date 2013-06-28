@@ -1,4 +1,4 @@
-#Add project reference
+# Add project reference
 import sys, os
 path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 sys.path.append(path)
@@ -22,7 +22,7 @@ class PoseUpdater(PollingProcessor):
     
     def start(self):
         print "Started polling pose for %s" % (self._robot.name)
-        self._addPollingProcessor('pose ' + self._robot.name, self.checkUpdatePose, (self._robot, ), .25)
+        self._addPollingProcessor('pose ' + self._robot.name, self.checkUpdatePose, (self._robot,), .25)
     
     def stop(self):        
         print "Stopped polling pose for %s" % (self._robot.name)
@@ -61,17 +61,20 @@ class Robot(object):
     @property
     def _transform(self):
         if self._tf == None:
-            self._tf = rosHelper.Transform(toTopic='/map', fromTopic='/base_footprint')
+            self._tf = rosHelper.Transform(rosHelper=rosHelper, toTopic='/map', fromTopic='/base_footprint')
         return self._tf
         
     @property
     def _ros(self):
         if self._rs == None:
-            #Wait to configure/initROS ROS till it's actually needed
+            # Wait to configure/initROS ROS till it's actually needed
             self._rs = rosHelper.ROS()
         return self._rs
     
     def getImage(self, retFormat='PNG'):
+        if not robot_config[self.name]['head'].has_key('camera'):
+            return None
+        
         img_msg = self._ros.getSingleMessage(self._imageTopic)
         if img_msg == None:
             return None
@@ -89,8 +92,8 @@ class Robot(object):
             if a > 180:
                 a = abs(a - 360)
             
-            #0=back, 180=front, 270=top, 90=bottom.  rotate if not front (0-180 are invalid angles, only included for 'buffer')
-            #if angle <= 90 and angle >= 270:
+            # 0=back, 180=front, 270=top, 90=bottom.  rotate if not front (0-180 are invalid angles, only included for 'buffer')
+            # if angle <= 90 and angle >= 270:
             if a <= robot_config[self._name]['head']['camera']['rotate']['distance']:
                 img = img.rotate(robot_config[self._name]['head']['camera']['rotate']['amount'])
         
@@ -126,10 +129,13 @@ class Robot(object):
         self._robInt.runComponent('light', colour)
 
     def setComponentState(self, name, value, blocking=True):
+        if robot_config[self.name].has_key(name) and robot_config[self.name][name].has_key('positions') and robot_config[self.name][name]['positions'].has_key(value):
+            value = robot_config[self.name][name]['positions'][value]
+        
         status = self._robInt.runComponent(name, value, None, blocking)
-        #There is a bug in the Gazebo COB interface that prevents proper trajectory tracking
-        #this causes most status messages to come back as aborted while the operation is still
-        #commencing, time delay to attempt to compensate...
+        # There is a bug in the Gazebo COB interface that prevents proper trajectory tracking
+        # this causes most status messages to come back as aborted while the operation is still
+        # commencing, time delay to attempt to compensate...
         if status != 3 and len(self._ros.getTopics('/gazebo')) > 0:
             time.sleep(1)
             print >> sys.stderr, 'Gazebo hack: state ' + self._rs._states[status] + ' changed to state ' + self._rs._states[3]
@@ -138,20 +144,10 @@ class Robot(object):
         return self._ros._states[status]
         
     def getComponentPositions(self, componentName):
-        try:
-            self._ros.configureROS(packageName='rospy')
-            import rospy
-            return rospy.get_param('%s/%s' % (self._serverTopic, componentName))
-        except:
-            return []
+        return self._ros.getParam('%s/%s' % (self._serverTopic, componentName))
 
     def getComponents(self):
-        try:
-            self._ros.configureROS(packageName='rospy')
-            import rospy
-            return rospy.get_param(self._serverTopic).keys()
-        except:
-            return []
+        return self._ros.getParam(self._serverTopic).keys()
         
     def getComponentState(self, componentName, dontResolveName=False):
         topic = '/%(name)s_controller/state' % { 'name': componentName }
@@ -184,11 +180,11 @@ class Robot(object):
         for positionName in positions:
             positionValue = self._getValue(positions[positionName])
             if type(positionValue) is not list:
-                #we don't currently handle nested types
+                # we don't currently handle nested types
                 continue
 
             if len(positionValue) != len(curPos):
-                #raise Exception("Arguement lengths don't match")
+                # raise Exception("Arguement lengths don't match")
                 continue
             
             dist = 0
@@ -200,6 +196,11 @@ class Robot(object):
                 diff = dist
                         
         if diff <= tolerance:
+            if robot_config[self.name].has_key[componentName] and robot_config[self.name][componentName].has_key('positions'):
+                positions = robot_config[self.name][componentName]['positions']
+                for key, value in positions.items():
+                    if value == state:
+                        return (key, state)
             return (name, state)
         else:
             return ('', state)

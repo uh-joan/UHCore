@@ -76,7 +76,7 @@ class SensorLog(PollingProcessor):
             print "Started updating database for %s sensor changes" % (self._name)
         else:
             print "Started updating database for [unknown] sensor changes"
-        self._addPollingProcessor('sensorHistory', self.checkUpdateSensors, (self._channels, ), 0.01)
+        self._addPollingProcessor('sensorHistory', self.checkUpdateSensors, (self._channels,), 0.01)
 
     def stop(self):
         if self._name != '':
@@ -87,76 +87,30 @@ class SensorLog(PollingProcessor):
         self._removePollingProcessor('sensorHistory')
 
     def checkUpdateSensors(self, channels):
-        for k in channels.keys():
-            if not self._logCache.has_key(k):
-                current = self._dao.getSensor(channels[k]['id'])
-                self._logCache.setdefault(k, { 'value': current['value'], 'status': current['status']})
-            if self._logCache[k]['status'] != channels[k]['status']:
+        for uuid, sensor in channels.items():
+            if not self._logCache.has_key(uuid):
+                current = self._dao.getSensor(sensor['id'])
+                self._logCache[uuid] = { 'value': current['value'], 'status': current['status']}
+
+            status = str(sensor['status']).capitalize()
+            if self._logCache[uuid]['status'] != status:
                 timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 success = self._dao.saveSensorLog(
-                                                  channels[k]['id'], 
-                                                  channels[k]['value'], 
-                                                  channels[k]['status'],
+                                                  sensor['id'],
+                                                  sensor['value'],
+                                                  status,
                                                   timestamp,
-                                                  channels[k]['room'],
-                                                  channels[k]['channel'])
+                                                  sensor['room'],
+                                                  sensor['channel'])
                 if success:
                     print "Updated sensor log for %(id)s to %(status)s" % { 
-                                                                           'id':channels[k]['channel'], 
-                                                                           'status': channels[k]['status']
+                                                                           'id':sensor['channel'],
+                                                                           'status': status
                                                                            }
-                    self._logCache[k]['value'] = channels[k]['value']
-                    self._logCache[k]['status'] = channels[k]['status']
+                    self._logCache[uuid]['value'] = sensor['value']
+                    self._logCache[uuid]['status'] = status
         
-
 if __name__ == '__main__':
     import sys
-    import config
-    import sensors
-    from Data.dataAccess import Locations
-    from sensors import GEOSystem, ZigBee, ZWaveHomeController, ZWaveVeraLite
-        
-    activeLocation = Locations().getActiveExperimentLocation() 
-    
-    if activeLocation == None:
-        print "Unable to determine active experiment Location"
-        exit
-    
-    sensorPollers = []
-    dataUpdaters = []
-    for sensorType in config.locations_config[activeLocation['location']]['sensors']:
-        sensor = None
-        if sensorType == 'ZWaveHomeController':
-            sensor = ZWaveHomeController(config.server_config['zwave_ip'])
-        elif sensorType == 'ZWaveVeraLite':
-            sensor = ZWaveVeraLite(config.server_config['zwave_ip'], config.server_config['zwave_port'])
-        elif sensorType == 'ZigBee':
-            sensor = ZigBee(config.server_config['udp_listen_port'])
-        elif sensorType == 'GEOSystem':
-            sensor = GEOSystem(config.server_config['mysql_geo_server'],
-                            config.server_config['mysql_geo_user'],
-                            config.server_config['mysql_geo_password'],
-                            config.server_config['mysql_geo_db'],
-                            config.server_config['mysql_geo_query'])
-
-        if sensor != None:
-            sensorPollers.append(sensor)
-            dataUpdaters.append(SensorLog(sensor.channels, sensor.__class__.__name__))
-        
-    for sensorPoller in sensorPollers:
-        sensorPoller.start()
-    
-    for dataUpdater in dataUpdaters:
-        dataUpdater.start()
-    
-    while True:
-        try:
-            sys.stdin.read()
-        except KeyboardInterrupt:
-            break
-
-    for sensorPoller in sensorPollers:
-        sensorPoller.stop()
-    
-    for dataUpdater in dataUpdaters:
-        dataUpdater.stop()
+    print >> sys.stderr, "Sensor update code has moved to sensory.py"
+    print >> sys.stderr, "Run 'python sensors.py' to begin monitoring sensors"

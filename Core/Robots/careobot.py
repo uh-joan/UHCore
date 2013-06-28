@@ -10,10 +10,10 @@ class CareOBot(robot.Robot):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name, rosMaster):
-        rosHelper.ROS.configureROS(rosMaster = rosMaster)
+        rosHelper.ROS.configureROS(rosMaster=rosMaster)
         super(CareOBot, self).__init__(name, ActionLib(), 'script_server', robot_config[name]['head']['camera']['topic'])
-        #super(CareOBot, self).__init__(name, ScriptServer(), 'script_server', '/stereo/right/image_color/compressed')
-                
+        # super(CareOBot, self).__init__(name, ScriptServer(), 'script_server', '/stereo/right/image_color/compressed')
+               
     def getCameraAngle(self):
         state = self.getComponentState('head', True)
         if state == None:
@@ -28,7 +28,7 @@ class CareOBot(robot.Robot):
         return angle
         
     def setComponentState(self, name, value, blocking=True):
-        #check if the component has been initialised, and init if it hasn't
+        # check if the component has been initialised, and init if it hasn't
         if len(self._ros.getTopics('/%(name)s_controller' % { 'name': name })) == 0:
             self._robInt.initComponent(name)
         
@@ -110,7 +110,7 @@ class ActionLib(object):
                           component_name=name,
                           parameter_name=value,
                           mode=mode,
-                          #blocking=blocking,
+                          # blocking=blocking,
                           service_name=service_name,
                           duration=duration
                           )
@@ -142,7 +142,7 @@ class ActionLib(object):
                           component_name=str(name).encode('ascii', 'ignore'),
                           parameter_name=str(value).encode('ascii', 'ignore'),
                           mode=str(mode).encode('ascii', 'ignore'),
-                          #blocking=bool(blocking)
+                          # blocking=bool(blocking)
                           )
         
         if(blocking):
@@ -173,7 +173,7 @@ class PoseUpdater(robot.PoseUpdater):
         for key, value in states.items():
             if value[1] != None:
                 try:
-                    #sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
+                    # sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
                     sensor = next(s for s in self._sensors if s['name'] == "%s" % (key))
                     if key in self._warned:
                         self._warned.remove(key)
@@ -220,11 +220,10 @@ class PoseUpdater(robot.PoseUpdater):
             
             averages.append(sum(self._rangeHistory[topic]) / len(self._rangeHistory[topic]))
         
-        
         if any(map(lambda x: x <= self._rangeThreshold, averages)):
-            trayIsEmpty = 'full'
+            trayIsEmpty = 'Full'
         else:
-            trayIsEmpty = 'empty'
+            trayIsEmpty = 'Empty'
    
         return (trayIsEmpty, trayIsEmpty)
 
@@ -242,12 +241,12 @@ class PoseUpdater(robot.PoseUpdater):
                 position = key
                 break
         
-        #debug code
+        # debug code
         if position == None:
             position = 'unnamed'
             print 'Name: %s, Pose: %s' % state
             
-        #position = position or 'unnamed'
+        # position = position or 'unnamed'
         return (position, position)
 
     def getTrayStates(self, robot):

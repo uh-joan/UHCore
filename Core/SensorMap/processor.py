@@ -85,7 +85,7 @@ class MapProcessor(object):
         """state can be empty or missing to use a stateless icon"""
         """x and y are in meters"""
         """orientation is assumed in radians, use d or r suffix to use others (90d/6R)"""
-        #TODO: when map is clicked, show RH coords
+        # TODO: when map is clicked, show RH coords
         
         if sys.version_info >= (2, 7):
             et.register_namespace("", "http://www.w3.org/2000/svg")
@@ -102,13 +102,13 @@ class MapProcessor(object):
             (x, y, d) = cc.toSensorMap(element['location'])
             (img, height, width) = self.getIcon(element['type'], state)
 
-            #y is reversed for translation, seems that way at least
+            # y is reversed for translation, seems that way at least
             My = mapHeight - y
-            #be sure to translate first, which changes the local coordinate space to the group object
-            #which is important for the rotation about the centre
+            # be sure to translate first, which changes the local coordinate space to the group object
+            # which is important for the rotation about the centre
             transform = "translate(%(x)s, %(y)s) rotate(%(rotate)s, %(xCenter)s, %(yCenter)s)" % {
-                                                                                                  'x': x, 
-                                                                                                  'y': My, 
+                                                                                                  'x': x,
+                                                                                                  'y': My,
                                                                                                   'rotate': d,
                                                                                                   'xCenter': (width / 2),
                                                                                                   'yCenter': (height / 2)
@@ -122,7 +122,7 @@ class MapProcessor(object):
         f = io.BytesIO()
         f.write('<?xml version=\"1.0\" standalone=\"no\"?>\n')
         f.write('<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n')
-        if sys.version_info >= (2,7):
+        if sys.version_info >= (2, 7):
             f.write(et.tostring(root))
         else:
             f.write(et.tostring(root).replace('ns0:', '').replace(':ns0', '')) 
@@ -134,22 +134,22 @@ class CoordinateConvertor(object):
     """Convert between ROS MAP and SVG MAP coordinate systems"""
     
     def __init__(self, transform):
-        #This could be solved and combined into a single transformation,
-        #but I left it this way so any changes to an individual transform could be 
-        #easily corrected for
+        # This could be solved and combined into a single transformation,
+        # but I left it this way so any changes to an individual transform could be 
+        # easily corrected for
         self._sensorMapToRHMapScale = transform['scale']
-        self._sensorMapToRHMapOffset = transform['offset'] #in sensorMapUnits
+        self._sensorMapToRHMapOffset = transform['offset']  # in sensorMapUnits
         self._sensorMapToRHLocRotation = transform['rotation']
 
-        #from the map.yaml file, combining these gets from real world coordinates to pgm pixels
+        # from the map.yaml file, combining these gets from real world coordinates to pgm pixels
         self._RHMapToRHLocScale = 0.05 
-        self._RHMapToRHLocOffset = (-8, -19.2) #in RHLoc units
+        self._RHMapToRHLocOffset = (-8, -19.2)  # in RHLoc units
         
     def toRobotHouse(self, (Mx, My, Mr)):
         """x and y are in sensor map pixels"""
         """r is assumed in degrees, use d or r suffix to use others (90d/6R)"""
-        #(px*s)+cx if cx in final units
-        #(px+cx)*s if cx in original units
+        # (px*s)+cx if cx in final units
+        # (px+cx)*s if cx in original units
         Rx = (Mx * self._sensorMapToRHMapScale) + self._sensorMapToRHMapOffset[0]
         Ry = (My * self._sensorMapToRHMapScale) + self._sensorMapToRHMapOffset[1]
         RHx = (Rx * self._RHMapToRHLocScale) + self._RHMapToRHLocOffset[0]
@@ -203,7 +203,7 @@ class CoordinateConvertor(object):
 
 if __name__ == '__main__':
     cc = CoordinateConvertor()
-    senLoc = cc.toSensorMap((0,0,math.pi / 2))
+    senLoc = cc.toSensorMap((0, 0, math.pi / 2))
     print senLoc
     rhLoc = cc.toRobotHouse(senLoc)
     print rhLoc

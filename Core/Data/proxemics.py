@@ -14,7 +14,7 @@ class ProxemicMover(object):
     
     def gotoTarget(self, user, posture, x, y, theta):
         if self._robot == None:
-            #TODO error handling
+            # TODO error handling
             return False
         
         self._rospy.wait_for_service('get_potential_proxemics_locations')
@@ -33,7 +33,7 @@ class ProxemicMover(object):
                 for targets in targets.targetPoses:
                     self._rospy.loginfo("MsgSeq=%d, time=%2f, coordinate frame=%s " % (
                                                                                     targets.header.seq,
-                                                                                    self._rospy.Time.now().toSec()-targets.header.stamp.toSec(),
+                                                                                    self._rospy.Time.now().toSec() - targets.header.stamp.toSec(),
                                                                                     targets.header.frame_id.c_str()))
                     
                     (_, _, yaw) = self._tf.transformations.euler_from_quaternion(targets.pose.orientation)
@@ -43,11 +43,11 @@ class ProxemicMover(object):
                                                                                 targets.pose.position.z,
                                                                                 math.degrees(yaw)))
                     
-                    if self._robot.setComponentState('base', [x,y,yaw]) == 3:
+                    if self._robot.setComponentState('base', [x, y, yaw]) == 3:
                         return True
 
         except self._rospy.ServiceException, e:
-            print "Service did not process request: %s"%str(e)
+            print "Service did not process request: %s" % str(e)
         
         return False
 

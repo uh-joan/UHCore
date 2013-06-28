@@ -1,4 +1,4 @@
-import MySQLdb, sys, math
+import MySQLdb, sys, math, time
 
 class Locations(object):
     def __init__ (self, robotTable=None, userTable=None, locationTable=None, locationRange=None):
@@ -13,13 +13,13 @@ class Locations(object):
         if locationRange == None:
             activeLocation = self.getActiveExperimentLocation()
             if activeLocation == None:
-                locationRange = [0,0]
+                locationRange = [0, 0]
             else:
                 locationRange = (activeLocation['startLocationRange'], activeLocation['endLocationRange'])
 
         self._sqlQuery = 'SELECT * FROM `%s`' % (self._locationTable)
         self._locationFilter = " `locationId` >= %(min)s AND `locationId` <= %(max)s" % {
-                                                                                      'min': locationRange[0], 
+                                                                                      'min': locationRange[0],
                                                                                       'max': locationRange[1]
                                                                                       }
 
@@ -62,8 +62,8 @@ class Locations(object):
             dist = 0
             dist += math.pow(curPos[0] - loc['xCoord'], 2)
             dist += math.pow(curPos[1] - loc['yCoord'], 2)
-            #We're not worried about orientation for location matching
-            #use a fraction of the orientation in case we get two named
+            # We're not worried about orientation for location matching
+            # use a fraction of the orientation in case we get two named
             # locations with the same x/y and different orientations
             # needs to be a very small fraction since rotation uses a different unit measurement
             # than location does (degrees vs. meters)
@@ -80,7 +80,7 @@ class Locations(object):
         
     def getLocationByName(self, name):
         sql = self._sqlQuery
-        sql +=  " WHERE `name` = %(name)s" 
+        sql += " WHERE `name` = %(name)s" 
         args = {'name': name }
         
         sql += " AND " + self._locationFilter
@@ -197,6 +197,18 @@ class Users(object):
 
         return self._sql.getSingle(sql, args)
     
+    def getUserByNickName(self, userName):
+        sql = "SELECT `%(user)s`.*, %(loc)s.name as 'locationName' \
+               FROM `%(user)s` \
+               INNER JOIN `%(loc)s` ON %(loc)s.`locationId` = `%(user)s`.`locationId`" % {
+                              'user': self._userTable,
+                              'loc': self._locationTable
+                              }
+        sql += " WHERE `nickname` = %(name)s"
+        args = {'name': userName }
+
+        return self._sql.getSingle(sql, args)
+    
     def getUserByName(self, userName):
         sql = "SELECT `%(user)s`.*, %(loc)s.name as 'locationName' \
                FROM `%(user)s` \
@@ -223,16 +235,34 @@ class Users(object):
 
         return self._sql.getData(sql, args)
     
-    def getActiveUserName(self):
-        sql = "SELECT `%(user)s`.`nickname` \
+    def setActiveUser(self, uid, sid=1):
+            sql = 'UPDATE `%s` ' % (self._sessionControlTable)
+            sql += ' \
+                    SET \
+                        `sessionTime` = %(time)s, \
+                        `sessionDate` = %(date)s, \
+                        `SessionUser` = %(user)s \
+                    WHERE \
+                        `sessionId` = %(sid)s'
+            
+            args = { 'time': time.strftime('%X'), 'date': time.strftime('%Y-%m-%d'), 'user': uid, 'sid': sid }
+            
+            if self._sql.saveData(sql, args) >= 0:
+                return sid
+            else:
+                return None
+    
+    def getActiveUser(self):
+        sql = "SELECT `%(user)s`.*, %(loc)s.name as 'locationName' \
                FROM `%(user)s` \
-               WHERE `%(user)s`.`userId` IN ( \
-                        SELECT `%(session)s`.`sessionUser` \
-                        FROM `%(session)s` )" % {
+               INNER JOIN `%(loc)s` ON %(loc)s.`locationId` = `%(user)s`.`locationId` \
+               INNER JOIN `%(session)s` s ON `%(session)s`.`SessionUser` = `%(user)s`.`userId`" % {
                               'user': self._userTable,
-                              'session': self._sessionControlTable
-                              }       
-        args = None
+                              'loc': self._locationTable,
+                              'session': self._sessionControlTable 
+                              }
+        sql += " WHERE s.`sessionId` = %(sid)s"
+        args = {'sid': 1}
         
         return self._sql.getData(sql, args)
     
@@ -265,18 +295,7 @@ class Users(object):
                 }
         
         return self._sql.saveData(sql, args) >= 0
-    
-    def setSessionControlTime(self, time):
-        sql = 'UPDATE `%s` ' % (self._sessionControlTable)
-        sql += 'SET `sessionTime` = %(time)s'
-        
-        args = { 'time': time }
-        
-        if self._sql.saveData(sql, args) >= 0:
-            return True
-        else:
-            return False
-        
+            
     def getPersonaValues(self):
         sql = "SELECT `%(persona)s`.* \
                FROM `%(persona)s` \
@@ -501,7 +520,7 @@ class Sensors(object):
         if sensorRange == None:
             activeLocation = Locations().getActiveExperimentLocation()
             if activeLocation == None:
-                sensorRange = [0,0]
+                sensorRange = [0, 0]
             else:
                 sensorRange = (activeLocation['startSensorRange'], activeLocation['endSensorRange'])
             
@@ -515,7 +534,7 @@ class Sensors(object):
                                                                                  'loc': self._locationTable }
                 
         self._sqlQuery += " WHERE ((`sensorId` >= %(min)s AND `sensorId` <= %(max)s) OR (`sensorId` >= 500 AND `sensorId` <= 799 )) " % {
-                                                                                      'min': sensorRange[0], 
+                                                                                      'min': sensorRange[0],
                                                                                       'max': sensorRange[1]
                                                                                       }
         
@@ -550,11 +569,11 @@ class Sensors(object):
         sql += "(`timestamp`, `sensorId`, `room`, `channel`, `value`, `status`) \
                     VALUES (%s, %s, %s, %s, %s, %s)"
         
-        args = (            timestamp, 
+        args = (timestamp,
                             sensorId,
-                            room, 
-                            channel, 
-                            value, 
+                            room,
+                            channel,
+                            value,
                             status)
         
         if self._sql.saveData(sql, args) >= 0:
@@ -778,9 +797,9 @@ class SQLDao(object):
             except Exception as e:
                 print >> sys.stderr, e
                 
-                #Access denied error == 1045, no reason to retry
+                # Access denied error == 1045, no reason to retry
                 if e.args[0] != 1045 and retry > 0:
-                    return self._getCursor(retry-1)
+                    return self._getCursor(retry - 1)
                 else:
                     raise e
         
@@ -814,7 +833,10 @@ class SQLDao(object):
             if e.args[0] == 2006:
                 return self.getData(sql, args, trimString)
             
-            print "Error %d: %s" % (e.args[0], e.args[1])
+            if len(e.args) > 1:
+                print "Error %d: %s" % (e.args[0], e.args[1])
+            else:
+                print "Error %s" & e.args
             return []
         
     def saveData(self, sql, args=None):
@@ -825,11 +847,11 @@ class SQLDao(object):
             conn.commit()
             rowId = cursor.lastrowid
             cursor.close()
-            #conn.close()
+            # conn.close()
             return rowId
         except MySQLdb.Error, e:
             cursor.close()
-            #conn.close()
+            # conn.close()
             # Server connection was forcibly severed from the server side
             # retry the request
             if e.args[0] == 2006:
@@ -842,5 +864,5 @@ class SQLDao(object):
 
 if __name__ == '__main__':
     h = ActionHistory()
-    hi =h.getHistoryByTag('other')
+    hi = h.getHistoryByTag('other')
     print hi

@@ -5,40 +5,39 @@
 #include <iostream>
 #include <stdio.h>
 
-Robot::Robot(std::string modulePath, std::string robotName, RobotType type) :
+Robot::Robot(std::string modulePath) :
+		PythonInterface(modulePath) {
+	Robot::name = "";
+	Robot::pInstance = NULL;
+}
+
+Robot::Robot(std::string modulePath, std::string robotName) :
 		PythonInterface(modulePath) {
 	Robot::name = robotName;
-	Robot::type = type;
+	Robot::pInstance = NULL;
 }
 
-std::string Robot::getModuleName() {
-	switch (Robot::type) {
-	case (Robot::CareOBot):
-		return "Robots.careobot";
-	case (Robot::Sunflower):
-		return "Robots.sunflower";
-	default:
-		return "Robots.robot";
+PyObject* Robot::getDefaultClassInstance() {
+	if (pInstance == NULL) {
+		PyObject* pClass = getClassObject("Robots.robotFactory", "Factory");
+		if (Robot::name != "") {
+			pInstance = callMethod(pClass, "getRobot", Robot::name.c_str());
+		} else {
+			pInstance = callMethod(pClass, "getCurrentRobot");
+		}
+		Py_DECREF(pClass);
 	}
-}
 
-std::string Robot::getClassName() {
-	switch (Robot::type) {
-	case (Robot::CareOBot):
-		return "CareOBot";
-	case (Robot::Sunflower):
-		return "Sunflower";
-	default:
-		return "Generic";
-	}
-}
-
-PyObject* Robot::getConstructorArgs() {
-	return PyString_FromString(Robot::name.c_str());
+	return pInstance;
 }
 
 void Robot::setLight(int color[]) {
 	PyObject *pValue = callMethod("setLight", "([i,i,i])", color);
+	Py_XDECREF(pValue);
+}
+
+void Robot::setLight(std::string color) {
+	PyObject *pValue = callMethod("setLight", color);
 	Py_XDECREF(pValue);
 }
 
@@ -66,8 +65,21 @@ Robot::Location Robot::getLocation() {
 	return l;
 }
 
-std::string Robot::setComponentState(std::string name, std::string value) {
-	PyObject *pValue = callMethod("setComponentState", value);
+std::string Robot::setComponentState(std::string name,
+		std::vector<double> jointGoals, bool blocking) {
+
+	std::string format = "(s, [";
+	for (int i = 0; i < jointGoals.size(); i++) {
+		format += "i,";
+	}
+	format = format.substr(0, format.length() - 1) + "], b)";
+
+	double goals[jointGoals.size()];
+	std::copy(jointGoals.begin(), jointGoals.end(), goals);
+	char* n = strdup(name.c_str());
+	char* f = strdup(format.c_str());
+
+	PyObject *pValue = callMethod("setComponentState", n, f, goals, blocking);
 	/** pValue = "SUCCESS" **/
 
 	if (pValue != NULL) {
@@ -82,7 +94,26 @@ std::string Robot::setComponentState(std::string name, std::string value) {
 	return "Error";
 }
 
-std::vector<Robot::Position> Robot::getComponentPositions(std::string componentName) {
+std::string Robot::setComponentState(std::string name, std::string value, bool blocking) {
+	char* n = strdup(name.c_str());
+	char* v = strdup(value.c_str());
+	PyObject *pValue = callMethod("setComponentState", "(s,s, b)", n, v, blocking);
+	/** pValue = "SUCCESS" **/
+
+	if (pValue != NULL) {
+		char* ret = PyString_AsString(pValue);
+		Py_DECREF(pValue);
+		return ret;
+	} else {
+		std::cout << "Error while calling method" << '\n';
+		PyErr_Print();
+	}
+
+	return "Error";
+}
+
+std::vector<Robot::Position> Robot::getComponentPositions(
+		std::string componentName) {
 	PyObject *pValue = callMethod("getComponentPositions", componentName);
 	/** pValue = {folded:(0.0, 1.1, ...)), wave:(in, out), joint_names:('elbo', 'wrist'), ...} **/
 
@@ -154,7 +185,7 @@ Robot::State Robot::getComponentState(std::string componentName) {
 		} else {
 			s.name = PyString_AsString(PySequence_GetItem(pValue, 0));
 			PyObject* values = PySequence_GetItem(pValue, 1);
-			if(PyDict_Check(values)) {
+			if (PyDict_Check(values)) {
 				PyObject* key = PyString_FromString("goals");
 				s.goals = parseDoubleArray(PyDict_GetItem(values, key));
 				Py_DecRef(key);

@@ -13,7 +13,7 @@ class Sunflower(Robot):
         pass
     
     def setComponentState(self, name, value):
-        #check if the component has been initialised, and init if it hasn't
+        # check if the component has been initialised, and init if it hasn't
         if name == 'base':
             self._robInt.initComponent(name)
         
@@ -76,28 +76,28 @@ class ActionLib(object):
 if __name__ == '__main__':
     s = Sunflower()
     print "Light red"
-    s.setLight([1,0,0])
+    s.setLight([1, 0, 0])
     
     # joint_names: ["head_pan", "head_tilt", "neck_upper", "neck_lower"]
-    #print "Head home " + s.setComponentState('head', 'home')
+    # print "Head home " + s.setComponentState('head', 'home')
     print "Head back " + s.setComponentState('head',
                                [ math.radians(90),
                                  math.radians(45),
                                  math.radians(90),
                                  math.radians(-90)])
-    #print s.setComponentState('base', [0,0, math.radians(-15)])
+    # print s.setComponentState('base', [0,0, math.radians(-15)])
     print "Head back " + s.setComponentState('head',
                                [ math.radians(-90),
                                  math.radians(-45),
                                  math.radians(90),
                                  math.radians(-90)])
-    #print s.setComponentState('base', [0,0, math.radians(15)])
+    # print s.setComponentState('base', [0,0, math.radians(15)])
     print "Head home " + s.setComponentState('head', 'home')
     print "Light green"
-    s.setLight([0,1,0])
+    s.setLight([0, 1, 0])
 
     print "Tray open " + s.setComponentState('tray', 'open')
     print "Tray close " + s.setComponentState('tray', [0])
     print "Light off"
-    s.setLight([0,0,0])
+    s.setLight([0, 0, 0])
     
