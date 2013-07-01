@@ -1,6 +1,6 @@
 #ifndef ROBOT_INTERFACE
 #define ROBOT_INTERFACE
-#include "base.h"
+#include "pythonInterface.h"
 #include <string>
 #include <vector>
 
@@ -45,7 +45,6 @@ public:
 	// create an interface to the specified robot
 	Robot(std::string modulePath, std::string robotName);
 
-protected:
 	// set the light to the specified RGB value
 	void setLight(int color[]);
 

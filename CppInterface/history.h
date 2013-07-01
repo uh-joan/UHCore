@@ -1,6 +1,6 @@
 #ifndef ACTION_HISTORY
 #define ACTION_HISTORY
-#include "base.h"
+#include "pythonInterface.h"
 #include <string>
 
 class ActionHistory: public PythonInterface {

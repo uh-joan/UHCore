@@ -1,5 +1,5 @@
 #include "robot.h"
-#include "Python.h"
+#include "boost/python.hpp"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -20,11 +20,19 @@ Robot::Robot(std::string modulePath, std::string robotName) :
 PyObject* Robot::getDefaultClassInstance() {
 	if (pInstance == NULL) {
 		PyObject* pClass = getClassObject("Robots.robotFactory", "Factory");
+		if(pClass == NULL) {
+			std::cout << "Error locating class object Robots.robotFactory.Factory" << std::endl;
+			return NULL;
+		}
+
 		if (Robot::name != "") {
+			std::cout << "Getting class for robot" << name << std::endl;
 			pInstance = callMethod(pClass, "getRobot", Robot::name.c_str());
 		} else {
+			std::cout << "Getting class for active robot" << std::endl;
 			pInstance = callMethod(pClass, "getCurrentRobot");
 		}
+
 		Py_DECREF(pClass);
 	}
 
