@@ -1,11 +1,12 @@
-#include "UHCore.h"
+#include "../CppInterface/include/robot.h"
 #include <iostream>
 #include <sstream>
 
 using namespace std;
 
 /*
- be sure to link in python during compilation ('-lpython2.6' for gcc linker)
+ python sources need to be included (-I/usr/include/python2.x)
+ python library (-lpython2.x) and UHCore (-lUHCore) libraries need to be linked
  */
 
 template<typename T>
