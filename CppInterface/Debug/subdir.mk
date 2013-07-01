@@ -6,16 +6,19 @@
 CPP_SRCS += \
 ../base.cpp \
 ../history.cpp \
+../pythonInterfacce.cpp \
 ../robot.cpp 
 
 OBJS += \
 ./base.o \
 ./history.o \
+./pythonInterfacce.o \
 ./robot.o 
 
 CPP_DEPS += \
 ./base.d \
 ./history.d \
+./pythonInterfacce.d \
 ./robot.d 
 
 

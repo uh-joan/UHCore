@@ -1,7 +1,6 @@
 #include "UHCore.h"
 #include <iostream>
 #include <sstream>
-#include "Python.h"
 
 using namespace std;
 
@@ -25,12 +24,6 @@ std::string vectorPrint(vector<T> v) {
 }
 
 int main(int argc, char *argv[]) {
-
-	// This has suddenly become necessary, will be fixed in a later version
-	if (!Py_IsInitialized()) {
-		Py_Initialize();
-		std::cout << "Python Initialized" << std::endl;
-	}
 
 	std::string modulePath = "/home/nathan/git/UHCore/Core";
 //	ActionHistory *hist = new ActionHistory(modulePath);
