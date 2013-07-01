@@ -1,4 +1,4 @@
-#include "history.h"
+#include "include/history.h"
 #include "boost/python.hpp"
 #include <string>
 #include <iostream>
@@ -39,7 +39,7 @@ PyObject* PythonInterface::getClassObject(std::string moduleName, std::string cl
 
 	char* fileName = PyModule_GetFilename(pModule);
 	char* argv[1] = { fileName };
-	PySys_SetArgvEx(1, argv, 0);
+	PySys_SetArgv(1, argv); //Change to old SetArgv for compatibility (SetArgvEx not available in python < 2.2.6)
 
 	PyObject *pDict = PyModule_GetDict(pModule);
 	Py_DECREF(pModule);

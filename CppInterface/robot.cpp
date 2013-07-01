@@ -1,4 +1,4 @@
-#include "robot.h"
+#include "inc/robot.h"
 #include "boost/python.hpp"
 #include <string>
 #include <vector>
@@ -77,7 +77,7 @@ std::string Robot::setComponentState(std::string name,
 		std::vector<double> jointGoals, bool blocking) {
 
 	std::string format = "(s, [";
-	for (int i = 0; i < jointGoals.size(); i++) {
+	for (int i = 0; i < (int)jointGoals.size(); i++) {
 		format += "i,";
 	}
 	format = format.substr(0, format.length() - 1) + "], b)";

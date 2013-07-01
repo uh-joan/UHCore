@@ -4,21 +4,18 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
-../base.cpp \
 ../history.cpp \
-../pythonInterfacce.cpp \
+../pythonInterface.cpp \
 ../robot.cpp 
 
 OBJS += \
-./base.o \
 ./history.o \
-./pythonInterfacce.o \
+./pythonInterface.o \
 ./robot.o 
 
 CPP_DEPS += \
-./base.d \
 ./history.d \
-./pythonInterfacce.d \
+./pythonInterface.d \
 ./robot.d 
 
 
