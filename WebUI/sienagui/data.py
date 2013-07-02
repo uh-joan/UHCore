@@ -71,7 +71,8 @@ class ExpressionRequest(object):
                 GUIexpression \
             WHERE \
                 ison='1' \
-            LIMIT 1"
+            LIMIT \
+                1"
 
         result = self._dao.sql.getSingle(sql)
         if result == None:
@@ -89,25 +90,25 @@ class FullActionList(object):
     def GET(self, session='1'):
 
         sql=" \
-            SELECT \
-                lt.message as ap_label, \
-                p.message as phraseal_feedback, \
-                apt.text as type_description, \
-                ap.likelihood, \
-                ap.apId, \
-                l.name as location_name, \
-                ap.precondId as precond_id\
-            FROM \
-                ActionPossibilities ap \
-                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
-                INNER JOIN Locations l ON ap.locationId = l.locationId \
-                INNER JOIN SessionControl s \
-                INNER JOIN Users u ON u.userId = s.SessionUser \
-                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
-                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId \
-            WHERE \
-                s.sessionId = %(session)s AND \
-                ap.parentId IS NULL AND \
+            SELECT\
+                lt.message as ap_label,\
+                p.message as phraseal_feedback,\
+                apt.text as type_description,\
+                ap.likelihood,\
+                ap.apId,\
+                ap.precondId as precond_id,\
+                l.name as location_name\
+            FROM\
+                SessionControl s\
+                INNER JOIN Users u ON u.userId = s.SessionUser\
+                INNER JOIN ActionPossibilities ap\
+                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId\
+                LEFT OUTER JOIN Locations l ON ap.locationId = l.locationId\
+                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId\
+                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId\
+            WHERE\
+                s.sessionId = %(session)s AND\
+                ap.parentId IS NULL AND\
                 ap.likelihood > %(threshold)s"
                 
         args = {'threshold': self._likelihood, 'session': session }
@@ -125,29 +126,28 @@ class RobotActions(object):
     def GET(self, session='1', ulang=None, robot=None):
 
         sql=" \
-            SELECT \
-                lt.message as ap_label, \
-                p.message as phraseal_feedback, \
-                apt.text as type_description, \
-                ap.likelihood, \
-                ap.apId, \
-                ap.precondId as precond_id \
-            FROM \
-                ActionPossibilities ap \
-                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
-                INNER JOIN Locations l ON ap.locationId = l.locationId \
-                INNER JOIN SessionControl s \
-                INNER JOIN ExperimentalLocation e ON s.ExperimentalLocationId = e.id \
-                INNER JOIN Users u ON u.userId = s.SessionUser \
-                INNER JOIN Robot r ON l.locationId = r.locationId AND r.robotid = e.activeRobot \
-                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
-                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId \
-            WHERE \
-                s.sessionId = %(session)s AND \
-                ap.parentId IS NULL AND \
-                ap.likelihood > %(threshold)s \
-            ORDER BY \
-                ap.likelihood \
+            SELECT\
+                lt.message as ap_label,\
+                p.message as phraseal_feedback,\
+                apt.text as type_description,\
+                ap.likelihood,\
+                ap.apId,\
+                ap.precondId as precond_id\
+            FROM\
+                SessionControl s\
+                INNER JOIN Users u ON u.userId = s.SessionUser\
+                INNER JOIN ExperimentalLocation e ON s.ExperimentalLocationId = e.id\
+                INNER JOIN Robot r ON r.robotId = e.activeRobot\
+                INNER JOIN ActionPossibilities ap ON ap.locationId = r.locationId OR ap.locationID IS NULL\
+                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId\
+                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId\
+                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId\
+            WHERE\
+                s.sessionId = %(session)s AND\
+                ap.parentId IS NULL AND\
+                ap.likelihood > %(threshold)s\
+            ORDER BY\
+                ap.likelihood\
             DESC"
         
         args = {'threshold': self._likelihood, 'session':session }
@@ -165,26 +165,26 @@ class SonsActions(object):
     def GET(self, session='1', ulang=None, pid='-1'):
 
         sql=" \
-            SELECT \
-                lt.message as ap_label, \
-                p.message as phraseal_feedback, \
-                apt.text as type_description, \
-                ap.likelihood, \
-                ap.apId, \
+            SELECT\
+                lt.message as ap_label,\
+                p.message as phraseal_feedback,\
+                apt.text as type_description,\
+                ap.likelihood,\
+                ap.apId,\
                 ap.precondId as precond_id\
-            FROM \
-                ActionPossibilities ap \
-                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
-                INNER JOIN SessionControl s \
-                INNER JOIN Users u ON u.userId = s.SessionUser \
-                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
-                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId \
-            WHERE \
-                s.sessionId = %(session)s AND \
-                ap.parentId = %(parent)s AND \
-                ap.likelihood > %(threshold)s \
-            ORDER BY \
-                ap.likelihood \
+            FROM\
+                SessionControl s\
+                INNER JOIN Users u ON u.userId = s.SessionUser\
+                INNER JOIN ActionPossibilities ap\
+                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId\
+                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId\
+                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId\
+            WHERE\
+                s.sessionId = %(session)s AND\
+                ap.parentId = %(parent)s AND\
+                ap.likelihood > %(threshold)s\
+            ORDER BY\
+                ap.likelihood\
             DESC"
         
         args = {'threshold': self._likelihood, 'session':session, 'parent': pid }
@@ -202,27 +202,26 @@ class UserActions(object):
     def GET(self, session='1', uid=None, ulang=None):
 
         sql=" \
-            SELECT \
-                lt.message as ap_label, \
-                p.message as phraseal_feedback, \
-                apt.text as type_description, \
-                ap.likelihood, \
-                ap.apId, \
+            SELECT\
+                lt.message as ap_label,\
+                p.message as phraseal_feedback,\
+                apt.text as type_description,\
+                ap.likelihood,\
+                ap.apId,\
                 ap.precondId as precond_id\
-            FROM \
-                ActionPossibilities ap \
-                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
-                INNER JOIN Locations l ON ap.locationId = l.locationId \
-                INNER JOIN SessionControl s \
-                INNER JOIN Users u ON u.userId = s.SessionUser \
-                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
-                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId \
-            WHERE \
-                s.sessionId = %(session)s AND \
-                ap.parentId IS NULL AND \
+            FROM\
+                SessionControl s\
+                INNER JOIN Users u ON u.userId = s.SessionUser\
+                INNER JOIN ActionPossibilities ap ON ap.locationId = u.locationId OR ap.locationID IS NULL\
+                INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId\
+                INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId\
+                INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId\
+            WHERE\
+                s.sessionId = %(session)s AND\
+                ap.parentId IS NULL AND\
                 ap.likelihood > %(threshold)s\
-            ORDER BY \
-                ap.likelihood \
+            ORDER BY\
+                ap.likelihood\
             DESC"
         
         args = {'threshold': self._likelihood, 'session': session }
@@ -246,7 +245,7 @@ class SetParameter(object):
             WHERE \
                 idActionPossibilityOptions = %(optId)s"
 
-        args = {'value': val, 'optId': opt_id }
+        args = { 'value': val, 'optId': opt_id }
 
         self._dao.sql.saveData(sql, args)
         return "OK"
