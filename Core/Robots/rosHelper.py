@@ -144,8 +144,9 @@ class ROS(object):
                         diffEnv[key] = value.replace(baseEnv[key], '').strip(':')
         
                 # Add in any overrides from the config file
-                diffEnv.update(ros_config['envVars'])
-                rosEnv.update(ros_config['envVars'])
+                if ros_config.has_key('envVars'):
+                    diffEnv.update(ros_config['envVars'])
+                    rosEnv.update(ros_config['envVars'])
 
             ROS._envVars[version] = (diffEnv, rosEnv)
 
@@ -169,9 +170,6 @@ class ROS(object):
         overlayPath = overlayPath or ros_config['overlayPath']
         if(rosMaster == None and ros_config.has_key('rosMaster')):
             rosMaster = ros_config['rosMaster']
-        else:
-            # TODO: error handling
-            pass
 
         for k, v in ROS.parseRosBash(version).items():
             if k == 'PYTHONPATH' and sys.path.count(v) == 0:

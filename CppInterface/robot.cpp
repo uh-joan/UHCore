@@ -1,15 +1,9 @@
-#include "inc/robot.h"
+#include "include/robot.h"
 #include "boost/python.hpp"
 #include <string>
 #include <vector>
 #include <iostream>
 #include <stdio.h>
-
-Robot::Robot(std::string modulePath) :
-		PythonInterface(modulePath) {
-	Robot::name = "";
-	Robot::pInstance = NULL;
-}
 
 Robot::Robot(std::string modulePath, std::string robotName) :
 		PythonInterface(modulePath) {
@@ -20,8 +14,10 @@ Robot::Robot(std::string modulePath, std::string robotName) :
 PyObject* Robot::getDefaultClassInstance() {
 	if (pInstance == NULL) {
 		PyObject* pClass = getClassObject("Robots.robotFactory", "Factory");
-		if(pClass == NULL) {
-			std::cout << "Error locating class object Robots.robotFactory.Factory" << std::endl;
+		if (pClass == NULL) {
+			std::cout
+					<< "Error locating class object Robots.robotFactory.Factory"
+					<< std::endl;
 			return NULL;
 		}
 
@@ -40,7 +36,7 @@ PyObject* Robot::getDefaultClassInstance() {
 }
 
 void Robot::setLight(int color[]) {
-	PyObject *pValue = callMethod("setLight", "([i,i,i])", color);
+	PyObject *pValue = callMethod("setLight", "([i,i,i])", color[0], color[1], color[2]);
 	Py_XDECREF(pValue);
 }
 
@@ -77,7 +73,7 @@ std::string Robot::setComponentState(std::string name,
 		std::vector<double> jointGoals, bool blocking) {
 
 	std::string format = "(s, [";
-	for (int i = 0; i < (int)jointGoals.size(); i++) {
+	for (int i = 0; i < (int) jointGoals.size(); i++) {
 		format += "i,";
 	}
 	format = format.substr(0, format.length() - 1) + "], b)";
@@ -102,10 +98,12 @@ std::string Robot::setComponentState(std::string name,
 	return "Error";
 }
 
-std::string Robot::setComponentState(std::string name, std::string value, bool blocking) {
+std::string Robot::setComponentState(std::string name, std::string value,
+		bool blocking) {
 	char* n = strdup(name.c_str());
 	char* v = strdup(value.c_str());
-	PyObject *pValue = callMethod("setComponentState", "(s,s, b)", n, v, blocking);
+	PyObject *pValue = callMethod("setComponentState", "(s,s, b)", n, v,
+			blocking);
 	/** pValue = "SUCCESS" **/
 
 	if (pValue != NULL) {
@@ -210,4 +208,50 @@ Robot::State Robot::getComponentState(std::string componentName) {
 	}
 
 	return s;
+}
+
+// block for the specified time
+void Robot::sleep(int milliseconds){
+	callMethod("sleep", "(i)", milliseconds);
+}
+
+// use text to speech to say the specified string, using the specified language code (and optional sub-code)
+// http://en.wikipedia.org/wiki/Language_localisation#Language_tags_and_codes
+void Robot::say(std::string text, std::string languageCode, bool blocking) {
+	if (text.empty()) {
+		return;
+	}
+
+	if (languageCode.empty()) {
+		languageCode = "en-gb";
+	}
+
+	char* lc = strdup(languageCode.c_str());
+	char* te = strdup(text.c_str());
+
+	callMethod("say", "(s, s, b)", te, lc, blocking);
+}
+
+// play the specified file
+void Robot::play(std::string fileName, bool blocking) {
+	if (fileName.empty()) {
+		return;
+	}
+
+	char* f = strdup(fileName.c_str());
+	callMethod("play", "(s, b)", f, blocking);
+}
+
+char* Robot::getImage(std::string retFormat) {
+	char* r = strdup(retFormat.c_str());
+
+	PyObject *pValue = callMethod("getImage", r);
+
+	char* img = NULL;
+	if (pValue != NULL) {
+		img = PyString_AsString(pValue);
+		Py_DECREF(pValue);
+	}
+
+	return img;
 }

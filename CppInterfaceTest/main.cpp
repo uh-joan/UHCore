@@ -10,9 +10,9 @@ using namespace std;
  */
 
 template<typename T>
-std::string vectorPrint(vector<T> v) {
+string vectorPrint(vector<T> v) {
 	int size = v.size();
-	std::stringstream ret;
+	stringstream ret;
 	ret << "[";
 	for(int i = 0; i < size; i++) {
 		ret << v.at(i);
@@ -26,10 +26,10 @@ std::string vectorPrint(vector<T> v) {
 
 int main(int argc, char *argv[]) {
 
-	std::string modulePath = "/home/nathan/git/UHCore/Core";
+	string modulePath = "/home/nathan/git/UHCore/Core";
 //	ActionHistory *hist = new ActionHistory(modulePath);
-//	std::string ruleName = "testPythonInterface";
-//	std::cout << hist->addHistory(ruleName) << '\n';
+//	string ruleName = "testPythonInterface";
+//	cout << hist->addHistory(ruleName) << '\n';
 //	hist->addHistoryAsync(ruleName);
 
 	Robot *rob = new Robot(modulePath); //use the current robot specified in the sessioncontrol table
@@ -41,10 +41,10 @@ int main(int argc, char *argv[]) {
 	cout << " Positions: " << vectorPrint(state.positions) << endl;
 	cout << " Goals: " << vectorPrint(state.goals) << endl;
 
-	std::string result = rob->setComponentState("arm", "wave", true);
+	string result = rob->setComponentState("arm", "wave", false);
 	cout << "Set arm to 'wave', result: " << result << endl;
 
-	result = rob->setComponentState("tray", "raised", true);
+	result = rob->setComponentState("tray", "raised", false);
 	cout << "Set tray to 'raised', result: " << result << endl;
 
 	int red[] = {1,0,0};
@@ -53,6 +53,10 @@ int main(int argc, char *argv[]) {
 
 	rob->setLight("white");
 	cout << "Set light to 'white'" << endl;
+
+	rob->play("filename.wav");
+	rob->say("test");
+	rob->say("test", "en-us");
 
 	cout << "Done" << endl;
 
