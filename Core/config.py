@@ -113,9 +113,6 @@ robot_config = {
 ros_config = {
     'version': 'groovy',
     'overlayPath': '~/git',
-    'envVars': {
-                 'ROBOT':'cob3-6',
-                 }
     }
 
 siena_config = {

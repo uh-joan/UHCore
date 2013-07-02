@@ -108,6 +108,15 @@ class Robot(object):
         img.save(imgBytes, retFormat)
 
         return imgBytes.getvalue()
+    
+    def play(self, fileName, blocking=True):
+        print "Play: %s" % fileName 
+    
+    def say(self, text, languageCode="en-gb", blocking=True):
+        print "Say (%s): %s" % (languageCode, text)
+        
+    def sleep(self, milliseconds):
+        time.sleep(milliseconds / 1000.0)
 
     def executeFunction(self, funcName, kwargs):
         return self._robInt.runFunction(funcName, kwargs)
@@ -163,7 +172,7 @@ class Robot(object):
             return ('', ret)
         else:
             return self.resolveComponentState(componentName, ret)
-    
+        
     def resolveComponentState(self, componentName, state, tolerance=0.5):
         if state == None:
             return (None, None)

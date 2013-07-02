@@ -34,6 +34,20 @@ class CareOBot(robot.Robot):
         
         return super(CareOBot, self).setComponentState(name, value, blocking)
     
+    def play(self, fileName, blocking=True):
+        self.executeFunction("play", {
+                                      'parameter_name':fileName,
+                                      'blocking':blocking
+                                      })
+    
+    def say(self, text, languageCode="en-gb", blocking=True):
+        self.executeFunction("say", {
+                                     'parameter_name': [text,],
+                                     'blocking': blocking })
+        
+    def sleep(self, milliseconds):
+        self.executeFunction("sleep", {'duration': milliseconds / 1000.0 })
+    
 class ScriptServer(object):
 
     def __init__(self):

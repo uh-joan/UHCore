@@ -1,4 +1,4 @@
-import MySQLdb, sys, math, time
+import MySQLdb, sys, math, time, datetime
 
 class Locations(object):
     def __init__ (self, robotTable=None, userTable=None, locationTable=None, locationRange=None):
@@ -564,7 +564,9 @@ class Sensors(object):
             
         return self._sql.getData(sql, args)
 
-    def saveSensorLog(self, sensorId, value, status, timestamp, room='', channel=''):
+    def saveSensorLog(self, sensorId, value, status, timestamp=None, room='', channel=''):
+        timestamp = timestamp or datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
         sql = "INSERT INTO `%(log)s`" % { 'log': self._sensorLogTable }
         sql += "(`timestamp`, `sensorId`, `room`, `channel`, `value`, `status`) \
                     VALUES (%s, %s, %s, %s, %s, %s)"

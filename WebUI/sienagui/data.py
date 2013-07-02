@@ -90,13 +90,13 @@ class FullActionList(object):
 
         sql=" \
             SELECT \
-                lt.message as label_text, \
-                p.message as phrase, \
+                lt.message as ap_label, \
+                p.message as phraseal_feedback, \
                 apt.text as type_description, \
                 ap.likelihood, \
                 ap.apId, \
                 l.name as location_name, \
-                ap.precondId \
+                ap.precondId as precond_id\
             FROM \
                 ActionPossibilities ap \
                 INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
@@ -126,31 +126,31 @@ class RobotActions(object):
 
         sql=" \
             SELECT \
-                lt.message as label_text, \
-                p.message as phrase, \
+                lt.message as ap_label, \
+                p.message as phraseal_feedback, \
                 apt.text as type_description, \
                 ap.likelihood, \
                 ap.apId, \
-                ap.precondId \
+                ap.precondId as precond_id \
             FROM \
                 ActionPossibilities ap \
                 INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
                 INNER JOIN Locations l ON ap.locationId = l.locationId \
                 INNER JOIN SessionControl s \
+                INNER JOIN ExperimentalLocation e ON s.ExperimentalLocationId = e.id \
                 INNER JOIN Users u ON u.userId = s.SessionUser \
-                INNER JOIN Robot r ON l.locationId = r.locationId \
+                INNER JOIN Robot r ON l.locationId = r.locationId AND r.robotid = e.activeRobot \
                 INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
                 INNER JOIN Messages p ON ap.ap_phrase = p.messageId AND u.languageId = p.languageId \
             WHERE \
                 s.sessionId = %(session)s AND \
                 ap.parentId IS NULL AND \
-                r.robotName = %(robot)s AND \
                 ap.likelihood > %(threshold)s \
             ORDER BY \
                 ap.likelihood \
             DESC"
         
-        args = {'threshold': self._likelihood, 'robot': 'simulated', 'session':session }
+        args = {'threshold': self._likelihood, 'session':session }
 
         results = self._dao.sql.getData(sql, args)
         return json.dumps(results)
@@ -166,16 +166,15 @@ class SonsActions(object):
 
         sql=" \
             SELECT \
-                lt.message as label_text, \
-                p.message as phrase, \
+                lt.message as ap_label, \
+                p.message as phraseal_feedback, \
                 apt.text as type_description, \
                 ap.likelihood, \
                 ap.apId, \
-                ap.precondId \
+                ap.precondId as precond_id\
             FROM \
                 ActionPossibilities ap \
                 INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
-                INNER JOIN Locations l ON ap.locationId = l.locationId \
                 INNER JOIN SessionControl s \
                 INNER JOIN Users u ON u.userId = s.SessionUser \
                 INNER JOIN Messages lt ON ap.ap_text = lt.messageId AND u.languageId = lt.languageId \
@@ -204,12 +203,12 @@ class UserActions(object):
 
         sql=" \
             SELECT \
-                lt.message as label_text, \
-                p.message as phrase, \
+                lt.message as ap_label, \
+                p.message as phraseal_feedback, \
                 apt.text as type_description, \
                 ap.likelihood, \
                 ap.apId, \
-                ap.precondId \
+                ap.precondId as precond_id\
             FROM \
                 ActionPossibilities ap \
                 INNER JOIN ActionPossibilityType apt ON ap.apTypeId = apt.apTypeId \
