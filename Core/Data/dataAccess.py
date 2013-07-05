@@ -196,7 +196,7 @@ class Users(object):
         args = {'uid': userId }
 
         return self._sql.getSingle(sql, args)
-    
+        
     def getUserByNickName(self, userName):
         sql = "SELECT `%(user)s`.*, %(loc)s.name as 'locationName' \
                FROM `%(user)s` \
@@ -235,22 +235,44 @@ class Users(object):
 
         return self._sql.getData(sql, args)
     
+    def updateUser(self, user):
+        sql = "UPDATE `%(user)s` " % self._userTable
+        sql += "\
+                SET \
+                    `firstName` = %(firstname)s, \
+                    `lastName` = %(lastName)s, \
+                    `nickname` = %(nickname)s, \
+                    `locationId` = %(locationId)s, \
+                    `poseId` = %(poseId)s, \
+                    `contextId` = %(contextId)s, \
+                    `uniqueRobotHouseUser` = %(uniqueRobotHouseUser)s, \
+                    `languageId` = %(languageId)s, \
+                    `xCoord` = %(xCoord)s, \
+                    `yCoord` = %(yCoord)s, \
+                    `orientation` = %(orientation)s \
+                WHERE \
+                    `userId` = %(userId)s"
+        if self._sql.saveData(sql, user) >= 0:
+            return True
+        else:
+            return False
+        
     def setActiveUser(self, uid, sid=1):
-            sql = 'UPDATE `%s` ' % (self._sessionControlTable)
-            sql += ' \
-                    SET \
-                        `sessionTime` = %(time)s, \
-                        `sessionDate` = %(date)s, \
-                        `SessionUser` = %(user)s \
-                    WHERE \
-                        `sessionId` = %(sid)s'
-            
-            args = { 'time': time.strftime('%X'), 'date': time.strftime('%Y-%m-%d'), 'user': uid, 'sid': sid }
-            
-            if self._sql.saveData(sql, args) >= 0:
-                return sid
-            else:
-                return None
+        sql = 'UPDATE `%s` ' % (self._sessionControlTable)
+        sql += ' \
+                SET \
+                    `sessionTime` = %(time)s, \
+                    `sessionDate` = %(date)s, \
+                    `SessionUser` = %(user)s \
+                WHERE \
+                    `sessionId` = %(sid)s'
+        
+        args = { 'time': time.strftime('%X'), 'date': time.strftime('%Y-%m-%d'), 'user': uid, 'sid': sid }
+        
+        if self._sql.saveData(sql, args) >= 0:
+            return sid
+        else:
+            return None
     
     def getActiveUser(self):
         sql = "SELECT `%(user)s`.*, %(loc)s.name as 'locationName' \

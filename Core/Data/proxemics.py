@@ -12,18 +12,22 @@ class ProxemicMover(object):
         self._rospy = rospy
         self._tf = tf
     
-    def gotoTarget(self, user, posture, x, y, theta):
+    def gotoTarget(self, userId, posture, x, y, theta):
         if self._robot == None:
-            # TODO error handling
-            return False
+            raise Exception("no robot specified")
         
-        self._rospy.wait_for_service('get_potential_proxemics_locations')
+        try:
+            self._rospy.wait_for_service('get_potential_proxemics_locations', 5)
+        except self._rospy.ROSException:
+            print "get_potential_proxemics_locations not ready within timeout"
+            raise Exception("proxemics module not running or broken")
+        
         getProxemicLocation = self._rospy.ServiceProxy('get_potential_proxemics_locations', accompany_context_aware_planner.GetPotentialProxemicsLocations)
         try:
             pose = ()
             pose.orientation = math.radians(theta)
             pose.position = (x, y, 0)
-            response = getProxemicLocation(userId=user, userPosture=posture, userPose=pose)
+            response = getProxemicLocation(userId=userId, userPosture=posture, userPose=pose)
             if len(response.targetPoses) == 0:
                 self._rospy.loginfo("No valid target pose was found.")
             else:

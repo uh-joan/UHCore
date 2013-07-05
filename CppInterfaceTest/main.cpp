@@ -14,9 +14,9 @@ string vectorPrint(vector<T> v) {
 	int size = v.size();
 	stringstream ret;
 	ret << "[";
-	for(int i = 0; i < size; i++) {
+	for (int i = 0; i < size; i++) {
 		ret << v.at(i);
-		if(i != size - 1) {
+		if (i != size - 1) {
 			ret << ",";
 		}
 	}
@@ -41,22 +41,39 @@ int main(int argc, char *argv[]) {
 	cout << " Positions: " << vectorPrint(state.positions) << endl;
 	cout << " Goals: " << vectorPrint(state.goals) << endl;
 
-	string result = rob->setComponentState("arm", "wave", false);
-	cout << "Set arm to 'wave', result: " << result << endl;
+	string result = "";
+	//result = rob->setComponentState("arm", "wave", false);
+	//cout << "Set arm to 'wave', result: " << result << endl;
+
+	Robot::Location pos = rob->getLocation();
+	vector<double> newPos(3);
+	newPos[0] = pos.x;
+	newPos[1] = pos.y;
+	newPos[2] = pos.orientation + 90;
+
+	result = rob->setComponentState("base", newPos, true);
+	cout << "Rotate 90 degrees: " << result << endl;
 
 	result = rob->setComponentState("tray", "raised", false);
 	cout << "Set tray to 'raised', result: " << result << endl;
 
-	int red[] = {1,0,0};
+	result = rob->setComponentState("torso", "left", true);
+	cout << "Set torso to 'left', result: " << result << endl;
+
+	cout << "Sleep for 500ms...";
+	rob->sleep(500);
+	cout << "Done." << endl;
+
+	int red[] = { 1, 0, 0 };
 	rob->setLight(red);
 	cout << "Set light to [1,0,0]" << endl;
 
 	rob->setLight("white");
 	cout << "Set light to 'white'" << endl;
 
-	rob->play("filename.wav");
-	rob->say("test");
-	rob->say("test", "en-us");
+	//rob->play("filename.wav");
+	//rob->say("test");
+	//rob->say("test", "en-us");
 
 	cout << "Done" << endl;
 
