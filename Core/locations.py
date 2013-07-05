@@ -96,7 +96,14 @@ class HumanLocationProcessor(LocationProcessor):
         return self._tm
 
     def _update(self, locid, x, y, theta):
+        #kept for legacy support
         self._dao.locations.saveLocation(999, 999, x, y, theta, server_config['mysql_location_table'], 'locationId')
+        
+        user = self._dao.users.getActiveUser()
+        user['xCoord'] = x
+        user['yCoord'] = y
+        user['orientation'] = theta
+        self._dao.users.updateUser(user)
     
     def _getCurrentLoc(self):
 
@@ -115,7 +122,9 @@ class HumanLocationProcessor(LocationProcessor):
         return Locations.resolveLocation(pos)
     
     def _getStoredLoc(self):
-        loc = self._dao.getLocation(999)
+        
+        user = self._dao.users.getActiveUser()
+        loc = self._dao.getLocation(user['locationId'])
         loc['locationName'] = loc['name']
         return loc
     

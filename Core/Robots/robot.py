@@ -6,7 +6,8 @@ sys.path.append(path)
 import io, math, time
 from PIL import Image
 from extensions import PollingProcessor
-from Data.dataAccess import Sensors
+from Data.dataAccess import Sensors, Users
+from Data.proxemics import ProxemicMover
 from config import robot_config
 import Data.dataAccess
 import rosHelper
@@ -140,7 +141,24 @@ class Robot(object):
     def setComponentState(self, name, value, blocking=True):
         if robot_config[self.name].has_key(name) and robot_config[self.name][name].has_key('positions') and robot_config[self.name][name]['positions'].has_key(value):
             value = robot_config[self.name][name]['positions'][value]
-        
+            
+        if name == "base" and value == "userLocation":
+            user = Users().getActiveUser()
+            try:
+                p = ProxemicMover(self)
+                if p.gotoTarget(user['userId'], user['poseId'], user['xCoord'], user['yCoord'], user['orientation']):
+                    return self._ros._states[3]
+                else:
+                    return self._ros._states[4]
+            except Exception as e:
+                print >> sys.stderr, "Exception occured while calling proxemics: %s" % e
+                
+            value = [user['xCoord'], user['yCoord'], math.radians(user['orientation'])]
+            print >> sys.stderr, "Proxemics failed, proceeding directly to location (%s, %s, %sdeg)" % (
+                                                                                                        user['xCoord'], 
+                                                                                                        user['yCoord'], 
+                                                                                                        user['orientation'])
+
         status = self._robInt.runComponent(name, value, None, blocking)
         # There is a bug in the Gazebo COB interface that prevents proper trajectory tracking
         # this causes most status messages to come back as aborted while the operation is still
@@ -151,7 +169,7 @@ class Robot(object):
             return self._ros._states[3]
         
         return self._ros._states[status]
-        
+    
     def getComponentPositions(self, componentName):
         return self._ros.getParam('%s/%s' % (self._serverTopic, componentName))
 
