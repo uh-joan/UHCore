@@ -280,7 +280,7 @@ class Transform(object):
         returns two tuples: (x, y, z) and a quaternion ( rx, ry, rz, rxy)
         Note: z values are 0 for 2D mapping and navigation.
         """
-        if len(self._ros.getTopics('base_pose')) == 0:
+        if len(self._ros.getTopics('base_pose', exactMatch=True)) == 0:
             # this should work for all navigation systems, but at a performance cost
             if self._listener == None:
                 self._listener = self._tf.TransformListener()
@@ -304,7 +304,11 @@ class Transform(object):
                 return ((None, None, None), None)
         else:
             # this takes significantly less processing time, but requires ipa_navigation    
-            pose = self._ros.getSingleMessage('/base_pose').pose
+            poseMsg = self._ros.getSingleMessage('/base_pose')
+            if poseMsg == None:
+                print >> sys.stderr, "No message recieved from /base_pose"
+                return ((None, None, None), None)
+            pose = poseMsg.pose
             xyPos = (pose.position.x, pose.position.y, pose.position.z)
             (_, _, orientation) = self._tf.transformations.euler_from_quaternion((pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w))
             return (xyPos, orientation)

@@ -78,14 +78,12 @@ std::string Robot::setComponentState(std::string name,
 	}
 	format = format.substr(0, format.length() - 1) + "], b)";
 
-	std::cout << format << std::endl;
-
 	double goals[jointGoals.size()];
 	std::copy(jointGoals.begin(), jointGoals.end(), goals);
 	char* n = strdup(name.c_str());
 	char* f = strdup(format.c_str());
 
-	PyObject *pValue = callMethod("setComponentState", n, f, goals, blocking);
+	PyObject *pValue = callMethod("setComponentState", f, n, goals, blocking);
 	/** pValue = "SUCCESS" **/
 
 	if (pValue != NULL) {
