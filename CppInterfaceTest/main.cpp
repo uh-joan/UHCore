@@ -42,15 +42,18 @@ int main(int argc, char *argv[]) {
 	cout << " Goals: " << vectorPrint(state.goals) << endl;
 
 	string result = "";
-	//result = rob->setComponentState("arm", "wave", false);
-	//cout << "Set arm to 'wave', result: " << result << endl;
+	result = rob->setComponentState("arm", "wave", false);
+	cout << "Set arm to 'wave', result: " << result << endl;
 
 	Robot::Location pos = rob->getLocation();
+	cout << "Start Pose: [" << pos.x << "," << pos.y << "," << pos.orientation << "]" << endl;
+
 	vector<double> newPos(3);
 	newPos[0] = pos.x;
 	newPos[1] = pos.y;
-	newPos[2] = pos.orientation + 90;
+	newPos[2] = (pos.orientation + 90) * 0.0174532925;
 
+	cout << "Pose: " << vectorPrint(newPos) << endl;
 	result = rob->setComponentState("base", newPos, true);
 	cout << "Rotate 90 degrees: " << result << endl;
 

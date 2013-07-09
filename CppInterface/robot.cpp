@@ -36,7 +36,8 @@ PyObject* Robot::getDefaultClassInstance() {
 }
 
 void Robot::setLight(int color[]) {
-	PyObject *pValue = callMethod("setLight", "([i,i,i])", color[0], color[1], color[2]);
+	PyObject *pValue = callMethod("setLight", "([i,i,i])", color[0], color[1],
+			color[2]);
 	Py_XDECREF(pValue);
 }
 
@@ -71,20 +72,22 @@ Robot::Location Robot::getLocation() {
 
 std::string Robot::setComponentState(std::string name,
 		std::vector<double> jointGoals, bool blocking) {
-
-	std::string format = "(s, [";
+	PyObject* g = PyList_New(jointGoals.size());
 	for (int i = 0; i < (int) jointGoals.size(); i++) {
-		format += "i,";
+			PyList_SetItem(g, i, Py_BuildValue("d", jointGoals[i]));
 	}
-	format = format.substr(0, format.length() - 1) + "], b)";
 
-	double goals[jointGoals.size()];
-	std::copy(jointGoals.begin(), jointGoals.end(), goals);
+	std::string format = "(s, O, b)";
 	char* n = strdup(name.c_str());
 	char* f = strdup(format.c_str());
 
-	PyObject *pValue = callMethod("setComponentState", f, n, goals, blocking);
+	std::cout << PyString_AsString(PyObject_Repr(Py_BuildValue(f, n, g, blocking))) << std::endl;
+
+
+	PyObject *pValue = callMethod("setComponentState", f, n, g, blocking);
 	/** pValue = "SUCCESS" **/
+
+	Py_DECREF(g);
 
 	if (pValue != NULL) {
 		char* ret = PyString_AsString(pValue);
@@ -211,7 +214,7 @@ Robot::State Robot::getComponentState(std::string componentName) {
 }
 
 // block for the specified time
-void Robot::sleep(int milliseconds){
+void Robot::sleep(int milliseconds) {
 	callMethod("sleep", "(i)", milliseconds);
 }
 
