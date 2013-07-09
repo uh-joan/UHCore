@@ -81,9 +81,6 @@ std::string Robot::setComponentState(std::string name,
 	char* n = strdup(name.c_str());
 	char* f = strdup(format.c_str());
 
-	std::cout << PyString_AsString(PyObject_Repr(Py_BuildValue(f, n, g, blocking))) << std::endl;
-
-
 	PyObject *pValue = callMethod("setComponentState", f, n, g, blocking);
 	/** pValue = "SUCCESS" **/
 

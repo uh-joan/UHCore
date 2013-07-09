@@ -278,7 +278,7 @@ class Users(object):
         sql = "SELECT `%(user)s`.*, %(loc)s.name as 'locationName' \
                FROM `%(user)s` \
                INNER JOIN `%(loc)s` ON %(loc)s.`locationId` = `%(user)s`.`locationId` \
-               INNER JOIN `%(session)s` s ON `%(session)s`.`SessionUser` = `%(user)s`.`userId`" % {
+               INNER JOIN `%(session)s` s ON s.`SessionUser` = `%(user)s`.`userId`" % {
                               'user': self._userTable,
                               'loc': self._locationTable,
                               'session': self._sessionControlTable 
@@ -286,7 +286,7 @@ class Users(object):
         sql += " WHERE s.`sessionId` = %(sid)s"
         args = {'sid': 1}
         
-        return self._sql.getData(sql, args)
+        return self._sql.getSingle(sql, args)
     
     def getUserPreferences(self):
         sql = "SELECT `%(user)s`.* \

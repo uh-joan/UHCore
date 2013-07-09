@@ -149,12 +149,13 @@ class Robot(object):
                 if p.gotoTarget(user['userId'], user['poseId'], user['xCoord'], user['yCoord'], user['orientation']):
                     return self._ros._states[3]
                 else:
-                    return self._ros._states[4]
+                    pass
+                    #return self._ros._states[4]
             except Exception as e:
                 print >> sys.stderr, "Exception occured while calling proxemics: %s" % e
-                
+            
             value = [user['xCoord'], user['yCoord'], math.radians(user['orientation'])]
-            print >> sys.stderr, "Proxemics failed, proceeding directly to location (%s, %s, %sdeg)" % (
+            print >> sys.stderr, "Proxemics failed, proceeding directly to location (%s, %s, %s)" % (
                                                                                                         user['xCoord'], 
                                                                                                         user['yCoord'], 
                                                                                                         user['orientation'])

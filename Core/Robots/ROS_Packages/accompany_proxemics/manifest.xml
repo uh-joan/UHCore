@@ -8,6 +8,7 @@
   <depend package="rospy"/>
   <depend package="tf"/>
   <depend package="accompany_context_aware_planner"/>
+  <depend package="geometry_msgs"/>
 </package>
 
 
