@@ -123,7 +123,7 @@ class RobotActions(object):
         self._dao = DataAccess()
         self._likelihood = siena_config['likelihood']
         
-    def GET(self, session='1', ulang=None, robot=None):
+    def GET(self, session='1', ulang=None, robot=None, uid=None):
 
         sql=" \
             SELECT\
