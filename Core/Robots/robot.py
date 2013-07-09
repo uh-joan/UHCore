@@ -62,7 +62,7 @@ class Robot(object):
     @property
     def _transform(self):
         if self._tf == None:
-            self._tf = rosHelper.Transform(rosHelper=rosHelper, toTopic='/map', fromTopic='/base_footprint')
+            self._tf = rosHelper.Transform(rosHelper=self._rs, toTopic='/map', fromTopic='/base_footprint')
         return self._tf
         
     @property
