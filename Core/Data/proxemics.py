@@ -1,4 +1,4 @@
-import math
+import math, sys
 import Robots.rosHelper
 
 class ProxemicMover(object):
@@ -8,7 +8,10 @@ class ProxemicMover(object):
         Robots.rosHelper.ROS.configureROS(packageName='accompany_proxemics')
         import rospy
         import tf
-        import accompany_context_aware_planner.GetPotentialProxemicsLocations
+        import accompany_context_aware_planner.srv
+        import geometry_msgs.msg
+        self._geoMsg = geometry_msgs.msg.Pose
+        self._srvMsg = accompany_context_aware_planner.srv.GetPotentialProxemicsLocations
         self._rospy = rospy
         self._tf = tf
     
@@ -17,17 +20,23 @@ class ProxemicMover(object):
             raise Exception("no robot specified")
         
         try:
-            self._rospy.wait_for_service('get_potential_proxemics_locations', 5)
+            self._rospy.wait_for_service('accompany_context_aware_planner/get_potential_proxemics_locations', 5)
         except self._rospy.ROSException:
-            print "get_potential_proxemics_locations not ready within timeout"
+            print >> sys.stderr, "get_potential_proxemics_locations not ready within timeout"
             raise Exception("proxemics module not running or broken")
         
-        getProxemicLocation = self._rospy.ServiceProxy('get_potential_proxemics_locations', accompany_context_aware_planner.GetPotentialProxemicsLocations)
+        getProxemicLocation = self._rospy.ServiceProxy(
+                                                       'accompany_context_aware_planner/get_potential_proxemics_locations', 
+                                                       self._srvMsg)
         try:
-            pose = ()
-            pose.orientation = math.radians(theta)
-            pose.position = (x, y, 0)
-            response = getProxemicLocation(userId=userId, userPosture=posture, userPose=pose)
+            pose = self._geoMsg()
+            pose.orientation.w = self._tf.transformations.quaternion_from_euler(0,0,math.radians(0))[3]
+            pose.position.x = x
+            pose.position.y = y
+            pose.position.z = 0
+            
+            response = getProxemicLocation(userId=userId, userPosture=posture, userPose=pose, robotGenericTaskId=1)
+            
             if len(response.targetPoses) == 0:
                 self._rospy.loginfo("No valid target pose was found.")
             else:
@@ -56,14 +65,16 @@ class ProxemicMover(object):
         return False
 
 if __name__ == "__main__":
-    from optparse import OptionParser
-    parser = OptionParser('proxemics.py userId userPosture X(m) Y(m) Orientation(deg)')
-    (_, args) = parser.parse_args()
-    if(len(args) != 5):
-        parser.error("incorrect number of arguments")
-        
-    from Robots.careobot import CareOBot
-    r = CareOBot('Care-O-Bot 3.2', 'http://cob3-2-pc1:11311')
+#     from optparse import OptionParser
+#     parser = OptionParser('proxemics.py userId userPosture X(m) Y(m) Orientation(deg)')
+#     (_, args) = parser.parse_args()
+#     if(len(args) != 5):
+#         parser.error("incorrect number of arguments")
+#         
+    from Robots.robotFactory import Factory
+    r = Factory.getCurrentRobot()
     p = ProxemicMover(r)
-    p.gotoTarget(int(args[1]), int(args[2]), float(args[3]), float(args[4]), float(args[5]))
+    #p.gotoTarget(int(args[1]), int(args[2]), float(args[3]), floatfloat(args[5])(args[4]), float(args[5]))
+    p.gotoTarget(5, 2, 0, 0, 0)
+    
     
