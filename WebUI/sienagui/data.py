@@ -49,9 +49,9 @@ class Command(object):
     def __init__(self):
         self._dao = DataAccess()
         
-    def GET(self, cmd_id='-1'):
+    def GET(self, cmd_id):
         
-        if self._dao.sensors.saveSensorLog(cmd_id, 1, 'On'):
+        if self._dao.sensors.saveSensorLog(cmd_id, True, 'Pressed'):
             return "OK"
         
         return "ERROR"
