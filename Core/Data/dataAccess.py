@@ -597,7 +597,7 @@ class Sensors(object):
                             sensorId,
                             room,
                             channel,
-                            value,
+                            str(value),
                             status)
         
         if self._sql.saveData(sql, args) >= 0:
