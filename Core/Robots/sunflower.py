@@ -33,10 +33,14 @@ class ActionLib(object):
         
         self._ros.initROS()
         self._sfClient = actionlib.SimpleActionClient('/sf_controller', self._sfMsgs.SunflowerAction)
+        print "Waiting for sf_controller..."
         self._sfClient.wait_for_server()
+        print "Connected to sf_controller"
 
         self._sfLight = actionlib.SimpleActionClient('/lights', self._sfLights.LightsAction)
+        print "Waiting for sf_lights..."
         self._sfLight.wait_for_server()
+        print "Connected to sf_lights"
         
     def runFunction(self, funcName, kwargs):
         return 5

@@ -91,7 +91,9 @@ class ActionLib(object):
         
         self._ros.initROS()
         self._client = actionlib.SimpleActionClient('/script_server', self._ssMsgs.ScriptAction)
+        print "Waiting for script_server"
         self._client.wait_for_server()
+        print "Connected to script_server"
         
     def runFunction(self, funcName, kwargs):
         name = None
