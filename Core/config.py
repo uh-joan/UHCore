@@ -69,7 +69,13 @@ locations_config = {
 robot_config = {
                 'Care-O-Bot 3.2': {
                                    'phidgets': { 'topics': ['/range_0', '/range_1', '/range_2', '/range_3'], 'windowSize': 5, 'distance': 20 },
-                                   'tray': { 'positions': { 'raised': 'up', 'lowered': 'down' }},
+                                   'tray': { 
+                                                'positions': { 
+                                                              'raised': 'up',
+                                                              'lowered': 'down' 
+                                                              },
+                                                'size' : 20
+                                            },
                                    'head': { 
                                                 'positions': { 'front': 'front', 'back': 'back' },
                                                 'camera': {
@@ -84,7 +90,13 @@ robot_config = {
                                    },
                 'Care-O-Bot 3.6': {
                                    'phidgets': {'topics': ['/tray_sensors/range_0', '/tray_sensors/range_1', '/tray_sensors/range_2', '/tray_sensors/range_3'], 'windowSize': 5, 'distance': 10 },
-                                   'tray': { 'positions': {'raised': 'deliverup', 'lowered': 'store'}},
+                                   'tray': { 
+                                                'positions': {
+                                                              'raised': 'deliverup',
+                                                              'lowered': 'store'
+                                                              },
+                                                'size' : 10
+                                            },
                                    'head': { 
                                                 'positions': { 'front': 'front', 'back': 'back' },
                                                 'camera': {

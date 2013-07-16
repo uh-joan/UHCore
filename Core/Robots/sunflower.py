@@ -7,7 +7,7 @@ class Sunflower(Robot):
     def __init__(self, name='Sunflower'):
         from rosHelper import ROS
         ROS.configureROS(version='electric', rosMaster='http://sf1-1-pc1:11311', overlayPath='/home/nathan/git/sunflower/')
-        super(Sunflower, self).__init__(name, ActionLib(), 'sf_controller', '')
+        super(Sunflower, self).__init__(name, ActionLib, 'sf_controller', '')
 
     def getImage(self, leftRight='right', retFormat='PNG'):
         pass

@@ -65,10 +65,11 @@ class ROS(object):
     
     def getParam(self, paramName):
         try:
-            self._ros.configureROS(packageName='rospy')
+            ROS.configureROS(packageName='rospy')
             import rospy
             return rospy.get_param(paramName)
-        except:
+        except Exception as e:
+            print >> sys.stderr, "Unable to connect to ros parameter server, Error: %s" % e
             return []
     
     def getTopics(self, baseFilter='', exactMatch=False, retry=10):

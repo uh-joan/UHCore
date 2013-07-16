@@ -53,7 +53,15 @@ class Robot(object):
         self._name = name
         self._serverTopic = serverTopic
         self._imageTopic = imageTopic
-        self._robInt = robotInterface
+        self._robIntClass = robotInterface
+        self._robIntInstance = None
+        
+    @property
+    def _robInt(self):
+        if self._robIntInstance == None:
+            self._robIntInstance = self._robIntClass()
+            
+        return self._robIntInstance
         
     @property
     def name(self):
@@ -224,10 +232,10 @@ class Robot(object):
                 diff = dist
                         
         if diff <= tolerance:
-            if robot_config[self.name].has_key[componentName] and robot_config[self.name][componentName].has_key('positions'):
+            if robot_config[self.name].has_key(componentName) and robot_config[self.name][componentName].has_key('positions'):
                 positions = robot_config[self.name][componentName]['positions']
                 for key, value in positions.items():
-                    if value == state:
+                    if value == name:
                         return (key, state)
             return (name, state)
         else:
