@@ -26,6 +26,7 @@ server_config = {
   'mysql_personas_table': '',
   'mysql_experimentLocations_table':'ExperimentalLocation',
   'mysql_session_control_table':'SessionControl',
+  'mysql_sensorIcon_table': 'SensorIcons',
   
   # The port on which the program is listening for UDP broadcast messages
   # transmitted by the ZigBee gateway

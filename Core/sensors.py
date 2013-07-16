@@ -1,7 +1,7 @@
 import sys
 from socket import AF_INET, SOCK_DGRAM, socket, timeout
-from Data.dataAccess import SQLDao, Sensors, Locations
-from Data.sensors import StateResolver
+from Data.dataAccess import SQLDao, Sensors
+from Data.stateResolver import StateResolver
 import json, urllib2, base64
 
 from extensions import PollingProcessor
@@ -208,6 +208,87 @@ class ZWaveVeraLite(PollingProcessor):
 										'value': _value,
 										'status': _status
 										}
+				
+class ZigBeeDirect(PollingProcessor):
+	
+	def __init__(self, usbPort, baudRate=9600):
+		super(ZigBeeDirect, self).__init__()
+		import serial
+		from Lib.xbee import ZigBee
+		self._port = serial.Serial(usbPort, baudRate)
+		self._zigbee = ZigBee(self._port)
+		
+		# Place for the callback methods to store "static" values.
+		# Currently only needed for the Moving Average Filter for the MCP9700
+		# temperature sensor temperature calculations.
+		self._handler_memory = {}
+		self._channels = {}
+		self._sr = StateResolver()
+		self._sensorDao = Sensors()
+		self._sensors = self._sensorDao.findSensors()
+		self._warned = []
+	
+	def __del__(self):
+		self._port.close()
+		super(ZigBeeDirect, self).__del__()
+		
+	def start(self):
+		print "Started polling directly connected zigBee sensors"
+		self._addPollingProcessor('zigBeeDirect', self.pollZigbeeSensors, None, 0.1)
+
+	def stop(self):
+		print "Stopped polling directly connected zigBee sensors"
+		self._removePollingProcessor('zigBeeDirect')
+		
+	# ZigBee thread main loop
+	def pollZigbeeSensors(self):
+		try:
+			#data, _ = self._xbee.wait_read_frame()
+			data = self._zigbee.wait_read_frame()
+		except Exception as e:
+			if type(e) != timeout:
+				print e
+			return
+
+		if data["id"] == "rx_explicit":
+			
+			mac = repr(data['source_addr_long']).replace('\\x', ':').strip(":'").lower()
+			
+			# If NI (Network Id)recognised include NI string in returned values
+			channels = self._zigbee._parse_samples(data['rf_data'])[0] # Parse IO data
+			for channel, val in channels.items():
+				channel = "!" + channel.lower()
+
+				try:
+					sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == str(mac) + str(channel))
+				except StopIteration:
+					# Only warn once, or we'll flood the console
+					if str(mac) + str(channel) not in self._warned:
+						print >> sys.stderr, "Warning: Unable to locate sensor record for zigbee sensor ID: %s" % (str(mac) + str(channel))
+						self._warned.append(str(mac) + str(channel))
+					continue
+					
+				_device = sensor['locationName']
+				_pin = sensor['name']
+				_id = sensor['sensorId']
+		
+				if val != '-' and val != '':
+					_type = sensor['sensorTypeName']
+					_uuid = '%s_%s' % (mac , channel)
+					if _type == 'TEMPERATURE_MCP9700_HOT' or _type == 'TEMPERATURE_MCP9700_COLD':
+						_value = str((float(val) - 0.5) * 100.0)
+					else:
+						_value = val
+					
+					_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id })
+		
+					self._channels[_uuid] = { 
+											'id': _id,
+											'room': _device,
+											'channel': _pin,
+											'value': _value,
+											'status': _status
+											}
 
 ################################################################################
 #
@@ -366,6 +447,18 @@ class GEOSystem(PollingProcessor):
 										}
 
 if __name__ == '__main__':
+	z = ZigBeeDirect('/dev/ttyUSB0')
+	z.start()
+	while True:
+		try:
+			sys.stdin.read()
+		except KeyboardInterrupt:
+			break
+		
+	z.stop()
+
+"""
+if __name__ == '__main__':
 	import config
 	from history import SensorLog
 	
@@ -413,3 +506,4 @@ if __name__ == '__main__':
 	
 	for dataUpdater in dataUpdaters:
 		dataUpdater.stop()
+"""
