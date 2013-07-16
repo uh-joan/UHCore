@@ -2,7 +2,6 @@ import datetime
 from Data.dataAccess import DataAccess
 from threading import Thread
 from extensions import PollingThread, PollingProcessor
-from Robots.careobot import CareOBot
 
 class ActionHistory(object):
     _defaultImageType = 'png'
@@ -93,7 +92,7 @@ class SensorLog(PollingProcessor):
                 self._logCache[uuid] = { 'value': current['value'], 'status': current['status']}
 
             status = str(sensor['status']).capitalize()
-            if self._logCache[uuid]['status'] != status:
+            if self._logCache[uuid]['status'] != status or self._logCache[uuid]['value'] != sensor['value']:
                 timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 success = self._dao.saveSensorLog(
                                                   sensor['id'],
@@ -103,14 +102,15 @@ class SensorLog(PollingProcessor):
                                                   sensor['room'],
                                                   sensor['channel'])
                 if success:
-                    print "Updated sensor log for %(id)s to %(status)s" % { 
+                    print "Updated sensor log for %(id)s to %(status)s (%(value)s)" % { 
                                                                            'id':sensor['channel'],
-                                                                           'status': status
+                                                                           'status': status,
+                                                                           'value': sensor['value'],
                                                                            }
                     self._logCache[uuid]['value'] = sensor['value']
                     self._logCache[uuid]['status'] = status
-        
+
 if __name__ == '__main__':
     import sys
-    print >> sys.stderr, "Sensor update code has moved to sensory.py"
+    print >> sys.stderr, "Sensor update code has moved to sensor.py"
     print >> sys.stderr, "Run 'python sensors.py' to begin monitoring sensors"

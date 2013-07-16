@@ -1,4 +1,5 @@
 from Data.dataAccess import Robots, Locations
+import sys
 import careobot
 import sunflower
 
@@ -14,9 +15,9 @@ class Factory(object):
             if robotData != None and robotData['robotName'] != '':
                 return Factory.getRobot(robotData['robotName'])
             else:
-                print "No data retrieved for robot ID %s" % activeLocation['activeRobot']
+                print >> sys.stderr, "No data retrieved for robot ID %s" % activeLocation['activeRobot']
         else:
-            print "No robots set for experiment location %s" % activeLocation['location']
+            print >> sys.stderr, "No robots set for experiment location %s" % activeLocation['location']
         
         return None
         

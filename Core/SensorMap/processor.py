@@ -1,4 +1,5 @@
 import io, sys, os, math, copy
+from Data.dataAccess import Sensors
 from xml.etree import ElementTree as et
 from threading import RLock
 
@@ -8,11 +9,12 @@ class MapProcessor(object):
     _mapLock = RLock()
     _iconLock = RLock()
 
-    def __init__(self, map):
+    def __init__(self, _map):
         self._root = os.path.dirname(os.path.realpath(__file__))
-        self._baseFile = os.path.join(self._root, map['base'])
-        self._map = map
-        self._sensorTypes = et.parse(os.path.join(self._root, 'type_icons.xml'))        
+        self._baseFile = os.path.join(self._root, _map['base'])
+        self._map = _map
+        self._sensorTypes = {}
+        self._dao = Sensors()
 
     @property
     def mapBase(self):
@@ -25,42 +27,41 @@ class MapProcessor(object):
         
         return copy.deepcopy(MapProcessor._mapCache[self._baseFile])
     
-    def getIcon(self, sensorType, sensorOn=False):
-        key = sensorType + str(sensorOn)
+    def getIcon(self, iconId, sensorOn=False):
+        key = str(iconId) + str(sensorOn)
         if not MapProcessor._iconCache.has_key(key):
             MapProcessor._iconLock.acquire()
             try:
-                rhSensorDef = None
-                if sys.version_info >= (2, 7):
-                    rhSensorDef = self._sensorTypes.find('type[@name="%s"]' % (sensorType))
-                else:
-                    for sensor in self._sensorTypes.findall('type'):
-                        if sensor.attrib['name'] == sensorType:
-                            rhSensorDef = sensor
-                            break
+                if not self._sensorTypes.has_key(iconId):
+                    self._sensorTypes[iconId] = self._dao.getSensorIcon(iconId) 
+                    
+                sensorDef = self._sensorTypes[iconId]
                 
                 imgFile = None
                 imgPath = None
-                if rhSensorDef != None and rhSensorDef.attrib.has_key('image'):
-                    if sensorOn:
-                        imgPath = rhSensorDef.attrib['image'] + '_on' + ".svg"
-                    else:
-                        imgPath = rhSensorDef.attrib['image'] + ".svg"
-    
-                    try:
-                        imgFile = et.parse(os.path.join(self._root, imgPath))      
-                    except Exception as e:
+                imgName = None
+                if sensorDef != None:
+                    imgName = sensorDef['name'] 
+                    if sensorDef['icon'] != None:
                         if sensorOn:
-                            print >> sys.stderr, "Error parsing %(name)s sensor image: %(error)s" % {'error' :e, 'name': sensorType }
+                            imgPath = sensorDef['icon'] + '_on' + ".svg"
+                        else:
+                            imgPath = sensorDef['icon'] + ".svg"
+        
+                        try:
+                            imgFile = et.parse(os.path.join(self._root, imgPath))      
+                        except Exception as e:
+                            if sensorOn:
+                                print >> sys.stderr, "Error parsing sensor image (%(path)s): %(error)s" % {'error' :e, 'path': imgPath }
     
                 if imgFile == None:
                     if imgPath != None:
                         print "Unable to load image from %(path)s, using default" % {'path' : imgPath }
                     else:
-                        print "Unable to load image for %(type)s, using default" % {'type': sensorType }
+                        print "Unable to load image for %(type)s, using default" % {'type': imgName }
                     imgPath = 'icons/default.svg'
                     imgFile = et.parse(os.path.join(self._root, imgPath))
-                    imgFile.find('{http://www.w3.org/2000/svg}text').text = sensorType            
+                    imgFile.find('{http://www.w3.org/2000/svg}text').text = imgName            
                 
                 if sys.version_info >= (2, 7):
                     group = et.Element('g')
@@ -95,12 +96,15 @@ class MapProcessor(object):
         cc = CoordinateConvertor(self._map)
         
         for element in elements:
-            if element.has_key('on'):
-                state = element['on']
-            else:
+            try:
+                if element['on'] == None:
+                    state = False
+                else:
+                    state = element['on']
+            except:
                 state = False
-            (x, y, d) = cc.toSensorMap(element['location'])
-            (img, height, width) = self.getIcon(element['type'], state)
+            (x, y, d) = cc.toSensorMap((element['xCoord'], element['yCoord'], element['orientation']))
+            (img, height, width) = self.getIcon(element['icon'], state)
 
             # y is reversed for translation, seems that way at least
             My = mapHeight - y
@@ -147,7 +151,13 @@ class CoordinateConvertor(object):
         
     def toRobotHouse(self, (Mx, My, Mr)):
         """x and y are in sensor map pixels"""
-        """r is assumed in degrees, use d or r suffix to use others (90d/6R)"""
+        """r is assumed in degrees, use d or r suffix to use others (90d/3.14r)"""
+        
+        #Defaults for missing values
+        Mx = Mx or 0
+        My = My or 0
+        Mr = Mr or 0
+
         # (px*s)+cx if cx in final units
         # (px+cx)*s if cx in original units
         Rx = (Mx * self._sensorMapToRHMapScale) + self._sensorMapToRHMapOffset[0]
@@ -173,8 +183,13 @@ class CoordinateConvertor(object):
         
     def toSensorMap(self, (RHx, RHy, RHr)):
         """x and y are in meters"""
-        """r is assumed in radians, use d or r suffix to use others (90d/6R)"""
+        """r is assumed in radians, use d or r suffix to use others (90d/3.14r)"""
         
+        #Defaults for missing values
+        RHx = RHx or 0
+        RHy = RHy or 0
+        RHr = RHr or 0
+
         # convert from real world to PGM
         # (x - -8) / 0.05, (y - -19.2) / 0.05
         
@@ -187,18 +202,17 @@ class CoordinateConvertor(object):
         My = (Ry - self._sensorMapToRHMapOffset[1]) / self._sensorMapToRHMapScale
         RHr = str(RHr).lower()
         Mr = None
-        if type(RHr) == str:            
-            if RHr.endswith('r'):
-                RHr = RHr.strip('r')
-            
-            if RHr.endswith('d'):
-                Mr = float(RHr.strip('d')) - self._sensorMapToRHLocRotation
-        
-        if Mr == None:
+        if type(RHr) == str:
             try:
-                Mr = math.degrees(float(RHr)) - self._sensorMapToRHLocRotation
+                if RHr.endswith('r'):
+                    Mr = math.degrees(float(RHr.strip('r')))
+                if RHr.endswith('d'):
+                    Mr = float(RHr.strip('d')) 
             except:
-                Mr = None
+                Mr = 0
+
+        Mr = Mr * -1 #svg rotates opposite of our cooridnate system
+        Mr = Mr - self._sensorMapToRHLocRotation
         return (Mx, My, Mr)
 
 if __name__ == '__main__':

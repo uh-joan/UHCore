@@ -4,8 +4,9 @@ import dataAccess
 class StateResolver(object):
 
     def __init__(self):
-        self._dao = dataAccess.DataAccess()
+        self._dao = dataAccess.Sensors()
         self._movingAverageCache = {}
+        self._sensorTypeCache = {}
         self._movingAverageCacheLength = 20
     
     def isSensorOn(self, sensor):
@@ -15,18 +16,34 @@ class StateResolver(object):
             return self.temperatureStatus(sensor).lower() == 'on'
         elif rule == 'Boolean':
             return self.evaluateBoolean(sensor['sensorTypeName'], value)
+        elif rule == '!Boolean':
+            return not self.evaluateBoolean(sensor['sensorTypeName'], value)
         elif rule.find('Watts') > -1:
             return self.evaluateRule(rule, value)
+        elif rule == 'N/A':
+            return None
+        elif rule == 'Level':
+            return self.evaluateLevel(value)
         else:
+            print >> sys.stderr, "Unknown sensor rule: %s" % rule
             return None
         
-    def evaluateBoolean(self, sensorType, value):            
+    def evaluateLevel(self, value):
+        return value > 1
+        
+    def evaluateBoolean(self, sensorType, value):
         if sensorType == 'CONTACT_REED':
             return float(value) == 1
         elif sensorType == 'CONTACT_PRESSUREMAT':
             return float(value) != 1
+        elif sensorType == 'LEVEL_SENSOR_SWITCH':
+            return float(value) == 1
         else:
-            return None
+            print "Unknown boolean sensorType: %s, defaulting to 0 == False all else True" 
+            try:
+                return float(value) != 0
+            except:
+                return True
     
     def evaluateRule(self, rule, value):
             try:
@@ -40,72 +57,43 @@ class StateResolver(object):
                 return None
     
     def resolveStates(self, sensorList):
-        """returns [{'id': sensor['sensorId'], 'value': sensor['value'], 'state':'Open'/'', 'on':True/False/None},]"""
+        """returns [{'id': sensor['sensorId'], 'value': sensor['value'], 'state':'Open/Closed/sensor['value']', 'on':True/False/None, 'xCoord': sensor['xCoord'], 'yCoord': sensor['yCoord'], 'orientation': sensor['orientation']}]"""
         states = []
                 
         for sensor in sensorList:
             state = {
-                     'id': sensor['sensorId'],
-                     'value': sensor['value'],
-                     'on': self.isSensorOn(sensor),
-                     'state': self.getDisplayState(sensor)}
-            
+                      'id': sensor['sensorId'],
+                      'value': sensor['value'],
+                      'on': self.isSensorOn(sensor),
+                      'state': self.getDisplayState(sensor),
+                      'xCoord': sensor['xCoord'],
+                      'yCoord': sensor['yCoord'],
+                      'orientation': '%sd' % sensor['orientation'],
+                      'icon': sensor['icon'],
+                      }
+             
             states.append(state)
             
         return states
-    
-    def appendSensorMetadata(self, sensorList, transform):
-        """adds location and type data to a list of sensors"""
-        """this REALLY needs to go in the database"""
-        from xml.etree import ElementTree as et
-        from SensorMap.processor import CoordinateConvertor
-        import os
-        cc = CoordinateConvertor(transform)
-        sensors = et.parse(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'sensor_metadata.xml'))
-        for sensor in sensorList:
-            meta = None
-            if sys.version_info >= (2, 7):
-                meta = sensors.getroot().find("./sensor[@id='%s']" % (sensor['id']))
-            else:
-                for s in sensors.getroot().findall('sensor'):
-                    if long(s.attrib['id']) == sensor['id']:
-                        meta = s
-                        break
-            if meta == None:
-                sensor['location'] = cc.toRobotHouse((0, 0, 0))
-                sensor['type'] = 'unknown'
-                continue
-            x = float(meta.get('x', 0))
-            y = float(meta.get('y', 0))
-            d = float(meta.get('direction', 0))
-            sensor['location'] = (x, y, '%sd' % (d))
-            sensor['type'] = meta.get('type', '')
         
-        return sensorList
+    def _getType(self, typeName):
+        if not self._sensorTypeCache.has_key(typeName):
+            self._sensorTypeCache[typeName] = self._dao.getSensorTypeByName(typeName)
+        
+        return self._sensorTypeCache[typeName]
     
     def getDisplayState(self, sensor):
-        stype = sensor['sensorTypeName']
-        if stype == 'CONTACT_REED':
-            if float(sensor['value']) == 1:
-                state =  'Open'
-            else:
-                state =  'Closed'
-        elif stype == 'CONTACT_PRESSUREMAT':
-            if float(sensor['value']) == 1:
-                state =  'Free'
-            else:
-                state =  'Occupied'
-        elif stype == 'TEMPERATURE_MCP9700_HOT' or stype == 'TEMPERATURE_MCP9700_COLD':
-            # return str((float(sensor['value']) - 0.5) * 100.0) + 'C'
-            state =  self.temperatureStatus(sensor)
-        elif stype == 'POWER_CONSUMPTION_MONITOR':
-            if self.evaluateRule(sensor['sensorRule'], sensor['value']):
-                state =  'On'
-            else:
-                state =  'Off'
-        else:
-            state =  str(sensor['value'])
-
+        stypename = sensor['sensorTypeName']
+        stype = self._getType(stypename)
+        
+        isOn = self.isSensorOn(sensor) 
+        if isOn:
+            state = stype['active']
+        elif isOn == False:
+            state = stype['inactive']
+        else: #isOn == None
+            state = str(sensor['value'])
+        
         return state.capitalize()        
 
     def temperatureStatus(self, sensor):
@@ -143,6 +131,8 @@ class StateResolver(object):
             return 'Off'
 
     def _importMetaData(self):
+        from dataAccess import DataAccess
+        dao = DataAccess()
         from xml.etree import ElementTree as et
         import os
         sensors = et.parse(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'sensor_metadata.xml'))
@@ -159,7 +149,7 @@ class StateResolver(object):
                     'd': d,
                     'id': sid}
             
-            self._dao.saveData(sql, args)
+            dao.saveData(sql, args)
 
     def _alterMetaData(self):
         from xml.etree import ElementTree as et

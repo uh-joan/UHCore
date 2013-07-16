@@ -530,10 +530,11 @@ class ActionHistory(object):
         return imageId
 
 class Sensors(object):
-    def __init__(self, sensorTable=None, sensorTypeTable=None, sensorLogTable=None, locationTable=None, sensorRange=None):
+    def __init__(self, sensorTable=None, sensorTypeTable=None, sensorLogTable=None, locationTable=None, sensorRange=None, sensorIconTable=None):
         from config import server_config
         self._sensorTable = sensorTable or server_config['mysql_sensor_table']
         self._sensorTypeTable = sensorTypeTable or server_config['mysql_sensorType_table']
+        self._sensorIconTable = sensorIconTable or server_config['mysql_sensorIcon_table']
         self._sensorLogTable = sensorLogTable or server_config['mysql_log_table']
         self._locationTable = locationTable or server_config['mysql_location_table']
         
@@ -572,6 +573,34 @@ class Sensors(object):
         sql = self._sqlQuery
         sql += " AND `name` = %(name)s" 
         args = {'name': sensorName}
+            
+        return self._sql.getSingle(sql, args)
+    
+    def getSensorType(self, sensorTypeId):
+        sql = "SELECT * FROM `%s` " % self._sensorTypeTable 
+        sql += " WHERE `sensorTypeId` = %(sid)s" 
+        args = {'sid': sensorTypeId }
+            
+        return self._sql.getSingle(sql, args)
+    
+    def getSensorTypeByName(self, sensorTypeName):
+        sql = "SELECT * FROM `%s` " % self._sensorTypeTable 
+        sql += " WHERE `sensorType` = %(name)s" 
+        args = {'name': sensorTypeName }
+            
+        return self._sql.getSingle(sql, args)
+    
+    def getSensorIcon(self, sensorTypeId):
+        sql = "SELECT * FROM `%s` " % self._sensorIconTable 
+        sql += " WHERE `id` = %(sid)s" 
+        args = {'sid': sensorTypeId }
+            
+        return self._sql.getSingle(sql, args)
+    
+    def getSensorIconByName(self, sensorTypeName):
+        sql = "SELECT * FROM `%s` " % self._sensorIconTable 
+        sql += " WHERE `name` = %(name)s" 
+        args = {'name': sensorTypeName }
             
         return self._sql.getSingle(sql, args)
     

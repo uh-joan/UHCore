@@ -26,11 +26,13 @@ server_config = {
   'mysql_personas_table': '',
   'mysql_experimentLocations_table':'ExperimentalLocation',
   'mysql_session_control_table':'SessionControl',
+  'mysql_sensorIcon_table': 'SensorIcons',
   
   # The port on which the program is listening for UDP broadcast messages
   # transmitted by the ZigBee gateway
 
   'udp_listen_port': 5000,
+  'zigbee_usb_port': '/dev/ttyUSB0',
 
   # The settings of the Geo-System MySQL server / database / table
   'mysql_geo_server':   'geo-eee-pc',
@@ -45,7 +47,7 @@ server_config = {
 
 locations_config = {
   'ZUYD Apartment': {
-                     'sensors': ['ZWaveHomeController'],
+                     'sensors': ['ZWaveHomeController', 'ZigBeeDirect'],
                      'map': {
                                  'base':'zuyd.svg',
                                  'scale':0.275,
@@ -54,7 +56,7 @@ locations_config = {
                             }
                      },
   'UH Robot House': {
-                     'sensors': ['ZigBee', 'GEOSystem'],
+                     'sensors': ['ZigBee', 'GEOSystem', 'ZigBeeDirect'],
                      'map': {
                                 'base':'RobotHouseMap.svg',
                                 'scale':0.275,

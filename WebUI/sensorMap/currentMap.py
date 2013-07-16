@@ -3,7 +3,7 @@ from cherrypy.lib import file_generator
 
 from SensorMap.processor import MapProcessor
 from Data.dataAccess import DataAccess, Locations, Robots
-from Data.sensors import StateResolver
+from Data.stateResolver import StateResolver
 from config import locations_config
 
 class MapImage(object):
@@ -28,12 +28,14 @@ class MapImage(object):
 
         mp = MapProcessor(self._emptyMap)
         sensors = self._sr.resolveStates(self._dao.findSensors())
-        sensors = self._sr.appendSensorMetadata(sensors, self._emptyMap) #adds location and type
+        #sensors = self._sr.appendSensorMetadata(sensors, self._emptyMap) #adds location and type
         cob = self._dao.getRobotByName(self._robotName)
         robot = {
-               'type':'robot', 
+               'icon':self._dao.sensors.getSensorIconByName('robot')['id'], 
                'name':cob['robotName'], 
-               'location': (cob['xCoord'], cob['yCoord'], '%sd' % (cob['orientation'] * -1)), #svg rotates opposite of our cooridnate system
+               'xCoord': cob['xCoord'],
+               'yCoord': cob['yCoord'],
+               'orientation': '%sd' % cob['orientation'],
                'id':'r%s' % (cob['robotId'])
                }
 
