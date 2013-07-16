@@ -22,17 +22,28 @@ class StateResolver(object):
             return self.evaluateRule(rule, value)
         elif rule == 'N/A':
             return None
+        elif rule == 'Level':
+            return self.evaluateLevel(value)
         else:
             print >> sys.stderr, "Unknown sensor rule: %s" % rule
             return None
+        
+    def evaluateLevel(self, value):
+        return value > 1
         
     def evaluateBoolean(self, sensorType, value):
         if sensorType == 'CONTACT_REED':
             return float(value) == 1
         elif sensorType == 'CONTACT_PRESSUREMAT':
             return float(value) != 1
+        elif sensorType == 'LEVEL_SENSOR_SWITCH':
+            return float(value) == 1
         else:
-            return None
+            print "Unknown boolean sensorType: %s, defaulting to 0 == False all else True" 
+            try:
+                return float(value) != 0
+            except:
+                return True
     
     def evaluateRule(self, rule, value):
             try:
@@ -64,36 +75,7 @@ class StateResolver(object):
             states.append(state)
             
         return states
-    
-#     def appendSensorMetadata(self, sensorList, transform):
-#         """adds location and type data to a list of sensors"""
-#         """this REALLY needs to go in the database"""
-#         from xml.etree import ElementTree as et
-#         from SensorMap.processor import CoordinateConvertor
-#         import os
-#         cc = CoordinateConvertor(transform)
-#         sensors = et.parse(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'sensor_metadata.xml'))
-#         for sensor in sensorList:
-#             meta = None
-#             if sys.version_info >= (2, 7):
-#                 meta = sensors.getroot().find("./sensor[@id='%s']" % (sensor['id']))
-#             else:
-#                 for s in sensors.getroot().findall('sensor'):
-#                     if long(s.attrib['id']) == sensor['id']:
-#                         meta = s
-#                         break
-#             if meta == None:
-#                 sensor['location'] = cc.toRobotHouse((0, 0, 0))
-#                 sensor['type'] = 'unknown'
-#                 continue
-#             x = float(meta.get('x', 0))
-#             y = float(meta.get('y', 0))
-#             d = float(meta.get('direction', 0))
-#             sensor['location'] = (x, y, '%sd' % (d))
-#             sensor['type'] = meta.get('type', '')
-#         
-#         return sensorList
-    
+        
     def _getType(self, typeName):
         if not self._sensorTypeCache.has_key(typeName):
             self._sensorTypeCache[typeName] = self._dao.getSensorTypeByName(typeName)

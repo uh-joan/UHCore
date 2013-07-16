@@ -1,10 +1,28 @@
 import sys
 from socket import AF_INET, SOCK_DGRAM, socket, timeout
-from Data.dataAccess import SQLDao, Sensors
+from Data.dataAccess import SQLDao, Sensors, Locations
 from Data.stateResolver import StateResolver
 import json, urllib2, base64
 
 from extensions import PollingProcessor
+
+class _valueHelper(object):
+	
+	@staticmethod
+	def filterValue(value, sensorType):
+		val = value
+		if value == '-' or value == '':
+			val = None
+		elif sensorType == 'TEMPERATURE_MCP9700_HOT' or sensorType == 'TEMPERATURE_MCP9700_COLD':
+			val = str((float(value) - 0.5) * 100.0)
+		elif sensorType == 'LEVEL_SENSOR':
+			val = int((value - 512) / 100)
+			if val < 0:
+				val = 0
+		elif sensorType == 'POWER_CONSUMPTION_MONITOR':
+			val = '%.1f' % val
+		
+		return val
 
 ################################################################################
 #
@@ -77,25 +95,22 @@ class ZWaveHomeController(PollingProcessor):
 			_device = sensor['locationName']
 			_pin = sensor['name']
 			_id = sensor['sensorId']
+			_rule = sensor['sensorRule']
 	
 			# order determines priority
 			valueKeys = ['valueSensor', 'value']
 			
-			val = ''
+			_value = None
 			for valueKey in valueKeys:
 				if device['properties'].has_key(valueKey):
-					val = device['properties'][valueKey]
+					_value = device['properties'][valueKey]
 					break
-	
-			if val != '-' and val != '':
+				
+			_value = _valueHelper.filterValue(_value, sensor['sensorTypeName'])
+			if _value != None:
 				_type = sensor['sensorTypeName']
 				_uuid = channelDescriptor
-				if _type == 'TEMPERATURE_MCP9700_HOT' or _type == 'TEMPERATURE_MCP9700_COLD':
-					_value = str((float(val) - 0.5) * 100.0)
-				else:
-					_value = val
-				
-				_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id })
+				_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id, 'sensorRule': _rule })
 	
 				self._channels[_uuid] = { 
 										'id': _id,
@@ -182,24 +197,21 @@ class ZWaveVeraLite(PollingProcessor):
 			_device = sensor['locationName']
 			_pin = sensor['name']
 			_id = sensor['sensorId']
+			_rule = sensor['sensorRule']
 
 			valueKeys = ['armed', 'status']
 
-			val = ''
+			_value = None
 			for valueKey in valueKeys:
 				if device.has_key(valueKey):
-					val = device[valueKey]
+					_value = device[valueKey]
 					break
 	
-			if val != '-' and val != '':
+			_value = _valueHelper.filterValue(_value, sensor['sensorTypeName'])
+			if _value != None:
 				_type = sensor['sensorTypeName']
 				_uuid = channelDescriptor
-				if _type == 'TEMPERATURE_MCP9700_HOT' or _type == 'TEMPERATURE_MCP9700_COLD':
-					_value = str((float(val) - 0.5) * 100.0)
-				else:
-					_value = val
-				
-				_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id })
+				_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id, 'sensorRule': _rule })
 	
 				self._channels[_uuid] = { 
 										'id': _id,
@@ -231,7 +243,14 @@ class ZigBeeDirect(PollingProcessor):
 	def __del__(self):
 		self._port.close()
 		super(ZigBeeDirect, self).__del__()
+	
+	@property
+	def channels(self):
+		if self._channels == None:
+			self._channels = {}
 		
+		return self._channels
+	
 	def start(self):
 		print "Started polling directly connected zigBee sensors"
 		self._addPollingProcessor('zigBeeDirect', self.pollZigbeeSensors, None, 0.1)
@@ -256,7 +275,7 @@ class ZigBeeDirect(PollingProcessor):
 			
 			# If NI (Network Id)recognised include NI string in returned values
 			channels = self._zigbee._parse_samples(data['rf_data'])[0] # Parse IO data
-			for channel, val in channels.items():
+			for channel, _value in channels.items():
 				channel = "!" + channel.lower()
 
 				try:
@@ -271,16 +290,13 @@ class ZigBeeDirect(PollingProcessor):
 				_device = sensor['locationName']
 				_pin = sensor['name']
 				_id = sensor['sensorId']
+				_rule = sensor['sensorRule']
 		
-				if val != '-' and val != '':
+				_value = _valueHelper.filterValue(_value, sensor['sensorTypeName'])
+				if _value != None:
 					_type = sensor['sensorTypeName']
 					_uuid = '%s_%s' % (mac , channel)
-					if _type == 'TEMPERATURE_MCP9700_HOT' or _type == 'TEMPERATURE_MCP9700_COLD':
-						_value = str((float(val) - 0.5) * 100.0)
-					else:
-						_value = val
-					
-					_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id })
+					_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id, 'sensorRule': _rule })
 		
 					self._channels[_uuid] = { 
 											'id': _id,
@@ -343,7 +359,7 @@ class ZigBee(PollingProcessor):
 				print e
 			return
 
-		(_, mac, channel, val) = data.split(' ')
+		(_, mac, channel, _value) = data.split(' ')
 
 		mac = mac.lower()
 		channel = channel.upper()
@@ -360,16 +376,13 @@ class ZigBee(PollingProcessor):
 		_device = sensor['locationName']
 		_pin = sensor['name']
 		_id = sensor['sensorId']
+		_rule = sensor['sensorRule']
 
-		if val != '-' and val != '':
+		_value = _valueHelper.filterValue(_value, sensor['sensorTypeName'])
+		if _value != None:
 			_type = sensor['sensorTypeName']
 			_uuid = '%s_%s' % (mac , channel)
-			if _type == 'TEMPERATURE_MCP9700_HOT' or _type == 'TEMPERATURE_MCP9700_COLD':
-				_value = str((float(val) - 0.5) * 100.0)
-			else:
-				_value = val
-			
-			_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id })
+			_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id, 'sensorRule': _rule })
 
 			self._channels[_uuid] = { 
 									'id': _id,
@@ -430,34 +443,24 @@ class GEOSystem(PollingProcessor):
 			_name = sensor['name']
 			_id = sensor['sensorId']
 			_type = sensor['sensorTypeName']
+			_rule = sensor['sensorRule']
+			_value = _valueHelper.filterValue(row['Power'], sensor['sensorTypeName'])
 
 			# Only warn once, or we'll flood the console
 			if _name != row['Description'] and row['ID'] not in self._warned:
 				print >> sys.stderr, 'Warning: Channel name differs from Geo-System description: %s / %s' % (_name, row['Description'])
 				self._warned.append(row['ID'])
 
-			_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': row['Power'], 'sensorId': _id })
+			_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id, 'sensorRule': _rule })
 
 			self._channels[row['ID']] = { 
 										'id': _id,
 										'room': _device,
 										'channel': _name,
-										'value': '%.1f' % row['Power'],
+										'value': _value,
 										'status': _status
 										}
 
-if __name__ == '__main__':
-	z = ZigBeeDirect('/dev/ttyUSB0')
-	z.start()
-	while True:
-		try:
-			sys.stdin.read()
-		except KeyboardInterrupt:
-			break
-		
-	z.stop()
-
-"""
 if __name__ == '__main__':
 	import config
 	from history import SensorLog
@@ -478,6 +481,8 @@ if __name__ == '__main__':
 			sensor = ZWaveVeraLite(config.server_config['zwave_ip'], config.server_config['zwave_port'])
 		elif sensorType == 'ZigBee':
 			sensor = ZigBee(config.server_config['udp_listen_port'])
+		elif sensorType == 'ZigBeeDirect':
+			sensor = ZigBeeDirect(config.server_config['zigbee_usb_port'])
 		elif sensorType == 'GEOSystem':
 			sensor = GEOSystem(config.server_config['mysql_geo_server'],
 		                    config.server_config['mysql_geo_user'],
@@ -506,4 +511,3 @@ if __name__ == '__main__':
 	
 	for dataUpdater in dataUpdaters:
 		dataUpdater.stop()
-"""
