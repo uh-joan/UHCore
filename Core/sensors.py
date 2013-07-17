@@ -21,7 +21,10 @@ class _valueHelper(object):
 				val = 0
 		elif sensorType == 'POWER_CONSUMPTION_MONITOR':
 			val = '%.1f' % val
-		
+		elif value == True: #1 and 0 are preferred for value
+			value = 1
+		elif value == False:
+			value = 0
 		return val
 
 ################################################################################
@@ -267,8 +270,9 @@ class ZigBeeDirect(PollingProcessor):
 			#data, _ = self._xbee.wait_read_frame()
 			data = self._zigbee.wait_read_frame()
 		except Exception as e:
-			if type(e) != timeout:
-				print e
+			if id(self) + type(e) not in self._warned:
+				print >> sys.stderr, "Error while receiving data from ZigBeeDirect: %s" % e
+				self._warned.append(id(self) + type(e))
 			return
 
 		if data["id"] == "rx_explicit":
