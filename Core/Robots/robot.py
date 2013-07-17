@@ -4,7 +4,6 @@ path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 sys.path.append(path)
 
 import io, math, time
-from PIL import Image
 from extensions import PollingProcessor
 from Data.dataAccess import Sensors, Users
 from Data.proxemics import ProxemicMover
@@ -88,6 +87,7 @@ class Robot(object):
         if img_msg == None:
             return None
         
+        from PIL import Image
         imgBytes = io.BytesIO()
         imgBytes.write(img_msg.data)
         

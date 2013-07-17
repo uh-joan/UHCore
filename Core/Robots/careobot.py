@@ -1,5 +1,4 @@
 import math, sys
-from PIL import Image
 import robot
 import rosHelper
 from config import robot_config
