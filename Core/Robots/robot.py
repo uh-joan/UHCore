@@ -4,7 +4,6 @@ path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 sys.path.append(path)
 
 import io, math, time
-from PIL import Image
 from extensions import PollingProcessor
 from Data.dataAccess import Sensors, Users
 from Data.proxemics import ProxemicMover
@@ -53,7 +52,15 @@ class Robot(object):
         self._name = name
         self._serverTopic = serverTopic
         self._imageTopic = imageTopic
-        self._robInt = robotInterface
+        self._robIntClass = robotInterface
+        self._robIntInstance = None
+        
+    @property
+    def _robInt(self):
+        if self._robIntInstance == None:
+            self._robIntInstance = self._robIntClass()
+            
+        return self._robIntInstance
         
     @property
     def name(self):
@@ -62,7 +69,10 @@ class Robot(object):
     @property
     def _transform(self):
         if self._tf == None:
-            self._tf = rosHelper.Transform(rosHelper=self._rs, toTopic='/map', fromTopic='/base_footprint')
+            try:
+                self._tf = rosHelper.Transform(rosHelper=self._rs, toTopic='/map', fromTopic='/base_footprint')
+            except Exception as e:
+                print >> sys.stderr, "Error occured while calling transform: %s" % repr(e)
         return self._tf
         
     @property
@@ -80,6 +90,7 @@ class Robot(object):
         if img_msg == None:
             return None
         
+        from PIL import Image
         imgBytes = io.BytesIO()
         imgBytes.write(img_msg.data)
         
@@ -123,7 +134,11 @@ class Robot(object):
         return self._robInt.runFunction(funcName, kwargs)
     
     def getLocation(self, dontResolveName=False):
-        ((x, y, _), rxy) = self._transform.getTransform()
+        tf = self._transform
+        if tf == None:
+            return ('', (None, None, None))
+
+        ((x, y, _), rxy) = tf.getTransform()
         if x == None or y == None:
             return ('', (None, None, None))
         
@@ -144,21 +159,27 @@ class Robot(object):
             
         if name == "base" and value == "userLocation":
             user = Users().getActiveUser()
-            try:
-                p = ProxemicMover(self)
-                if p.gotoTarget(user['userId'], user['poseId'], user['xCoord'], user['yCoord'], user['orientation']):
-                    return self._ros._states[3]
-                else:
-                    pass
-                    #return self._ros._states[4]
-            except Exception as e:
-                print >> sys.stderr, "Exception occured while calling proxemics: %s" % e
-            
-            value = [user['xCoord'], user['yCoord'], math.radians(user['orientation'])]
-            print >> sys.stderr, "Proxemics failed, proceeding directly to location (%s, %s, %s)" % (
-                                                                                                        user['xCoord'], 
-                                                                                                        user['yCoord'], 
-                                                                                                        user['orientation'])
+            if user['xCoord'] != None and user['yCoord'] != None and user['orientation'] != None:
+                try:
+                    p = ProxemicMover(self)
+                    if p.gotoTarget(user['userId'], user['poseId'], user['xCoord'], user['yCoord'], user['orientation']):
+                        return self._ros._states[3]
+                    else:
+                        pass
+                        #return self._ros._states[4]
+                except Exception as e:
+                    print >> sys.stderr, "Exception occured while calling proxemics: %s" % e
+                
+                value = [user['xCoord'], user['yCoord'], math.radians(user['orientation'])]
+                print >> sys.stderr, "Proxemics failed, proceeding directly to location (%s, %s, %s)" % (
+                                                                                                            user['xCoord'], 
+                                                                                                            user['yCoord'], 
+                                                                                                            user['orientation'])
+            else:
+                print >> sys.stderr, "Could not go to user location, missing information.  X:%s, Y:%s, T:%s" % (
+                                                                                                            user['xCoord'], 
+                                                                                                            user['yCoord'], 
+                                                                                                            user['orientation'])
 
         status = self._robInt.runComponent(name, value, None, blocking)
         # There is a bug in the Gazebo COB interface that prevents proper trajectory tracking
@@ -224,10 +245,10 @@ class Robot(object):
                 diff = dist
                         
         if diff <= tolerance:
-            if robot_config[self.name].has_key[componentName] and robot_config[self.name][componentName].has_key('positions'):
+            if robot_config[self.name].has_key(componentName) and robot_config[self.name][componentName].has_key('positions'):
                 positions = robot_config[self.name][componentName]['positions']
                 for key, value in positions.items():
-                    if value == state:
+                    if value == name:
                         return (key, state)
             return (name, state)
         else:

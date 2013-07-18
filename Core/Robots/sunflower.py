@@ -7,7 +7,7 @@ class Sunflower(Robot):
     def __init__(self, name='Sunflower'):
         from rosHelper import ROS
         ROS.configureROS(version='electric', rosMaster='http://sf1-1-pc1:11311', overlayPath='/home/nathan/git/sunflower/')
-        super(Sunflower, self).__init__(name, ActionLib(), 'sf_controller', '')
+        super(Sunflower, self).__init__(name, ActionLib, 'sf_controller', '')
 
     def getImage(self, leftRight='right', retFormat='PNG'):
         pass
@@ -33,10 +33,14 @@ class ActionLib(object):
         
         self._ros.initROS()
         self._sfClient = actionlib.SimpleActionClient('/sf_controller', self._sfMsgs.SunflowerAction)
+        print "Waiting for sf_controller..."
         self._sfClient.wait_for_server()
+        print "Connected to sf_controller"
 
         self._sfLight = actionlib.SimpleActionClient('/lights', self._sfLights.LightsAction)
+        print "Waiting for sf_lights..."
         self._sfLight.wait_for_server()
+        print "Connected to sf_lights"
         
     def runFunction(self, funcName, kwargs):
         return 5

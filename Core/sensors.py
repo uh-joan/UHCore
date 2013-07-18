@@ -21,7 +21,10 @@ class _valueHelper(object):
 				val = 0
 		elif sensorType == 'POWER_CONSUMPTION_MONITOR':
 			val = '%.1f' % val
-		
+		elif value == True: #1 and 0 are preferred for value
+			value = 1
+		elif value == False:
+			value = 0
 		return val
 
 ################################################################################
@@ -77,8 +80,9 @@ class ZWaveHomeController(PollingProcessor):
 			result = urllib2.urlopen(request)
 			data = json.load(result) 
 		except Exception as e:
-			if type(e) != timeout:
-				print e
+			if id(self) + type(e) not in self._warned:
+				print >> sys.stderr, "Error while receiving data from ZWaveHomeController: %s" % e
+				self._warned.append(id(self) + type(e))
 			return
 		
 		for device in data:
@@ -88,7 +92,7 @@ class ZWaveHomeController(PollingProcessor):
 			except StopIteration:
 				# Only warn once, or we'll flood the console
 				if channelDescriptor not in self._warned:
-					print >> sys.stderr, "Warning: Unable to locate sensor record for zwave sensor ID: %s (%s)" % (str(channelDescriptor), str(device['name']))
+					print "Warning: Unable to locate sensor record for ZWave sensor ID: %s (%s)" % (str(channelDescriptor), str(device['name']))
 					self._warned.append(channelDescriptor)
 				continue
 	
@@ -176,8 +180,9 @@ class ZWaveVeraLite(PollingProcessor):
 				url += '&loadtime=%(load)s&dataversion=(dataversion)s' % {'load': self._loadTime, 'dataversion': self._dataVersion }
 			data = json.load(urllib2.urlopen(url)) 
 		except Exception as e:
-			if type(e) != timeout:
-				print e
+			if id(self) + type(e) not in self._warned:
+				print >> sys.stderr, "Error while receiving data from ZWaveVeraLite: %s" % e
+				self._warned.append(id(self) + type(e))
 			return
 		
 		self._loadTime = data['loadtime']
@@ -190,7 +195,7 @@ class ZWaveVeraLite(PollingProcessor):
 			except StopIteration:
 				# Only warn once, or we'll flood the console
 				if channelDescriptor not in self._warned:
-					print >> sys.stderr, "Warning: Unable to locate sensor record for zwave sensor ID: %s (%s)" % (str(channelDescriptor), str(device['name']))
+					print "Warning: Unable to locate sensor record for ZWave sensor ID: %s (%s)" % (str(channelDescriptor), str(device['name']))
 					self._warned.append(channelDescriptor)
 				continue
 	
@@ -265,8 +270,9 @@ class ZigBeeDirect(PollingProcessor):
 			#data, _ = self._xbee.wait_read_frame()
 			data = self._zigbee.wait_read_frame()
 		except Exception as e:
-			if type(e) != timeout:
-				print e
+			if id(self) + type(e) not in self._warned:
+				print >> sys.stderr, "Error while receiving data from ZigBeeDirect: %s" % e
+				self._warned.append(id(self) + type(e))
 			return
 
 		if data["id"] == "rx_explicit":
@@ -283,7 +289,7 @@ class ZigBeeDirect(PollingProcessor):
 				except StopIteration:
 					# Only warn once, or we'll flood the console
 					if str(mac) + str(channel) not in self._warned:
-						print >> sys.stderr, "Warning: Unable to locate sensor record for zigbee sensor ID: %s" % (str(mac) + str(channel))
+						print "Warning: Unable to locate sensor record for ZigBee sensor ID: %s" % (str(mac) + str(channel))
 						self._warned.append(str(mac) + str(channel))
 					continue
 					
@@ -369,7 +375,7 @@ class ZigBee(PollingProcessor):
 		except StopIteration:
 			# Only warn once, or we'll flood the console
 			if str(mac) + str(channel) not in self._warned:
-				print >> sys.stderr, "Warning: Unable to locate sensor record for zigbee sensor ID: %s" % (str(mac) + str(channel))
+				print "Warning: Unable to locate sensor record for ZigBee sensor ID: %s" % (str(mac) + str(channel))
 				self._warned.append(str(mac) + str(channel))
 			return
 
@@ -435,7 +441,7 @@ class GEOSystem(PollingProcessor):
 			except StopIteration:
 				# Only warn once, or we'll flood the console
 				if row['ID'] not in self._warned:
-					print >> sys.stderr, "Warning: Unable to locate sensor record for geo sensor %s. ID: %s" % (row['Description'], row['ID'])
+					print "Warning: Unable to locate sensor record for GEO sensor %s. ID: %s" % (row['Description'], row['ID'])
 					self._warned.append(row['ID'])
 				continue
 
@@ -448,7 +454,7 @@ class GEOSystem(PollingProcessor):
 
 			# Only warn once, or we'll flood the console
 			if _name != row['Description'] and row['ID'] not in self._warned:
-				print >> sys.stderr, 'Warning: Channel name differs from Geo-System description: %s / %s' % (_name, row['Description'])
+				print 'Warning: Channel name differs from GEO-System description: %s / %s' % (_name, row['Description'])
 				self._warned.append(row['ID'])
 
 			_status = self._sr.getDisplayState({'sensorTypeName': _type, 'value': _value, 'sensorId': _id, 'sensorRule': _rule })

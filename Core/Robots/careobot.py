@@ -1,5 +1,4 @@
 import math, sys
-from PIL import Image
 import robot
 import rosHelper
 from config import robot_config
@@ -11,8 +10,8 @@ class CareOBot(robot.Robot):
 
     def __init__(self, name, rosMaster):
         rosHelper.ROS.configureROS(rosMaster=rosMaster)
-        super(CareOBot, self).__init__(name, ActionLib(), 'script_server', robot_config[name]['head']['camera']['topic'])
-        # super(CareOBot, self).__init__(name, ScriptServer(), 'script_server', '/stereo/right/image_color/compressed')
+        super(CareOBot, self).__init__(name, ActionLib, 'script_server', robot_config[name]['head']['camera']['topic'])
+        # super(CareOBot, self).__init__(name, ScriptServer, 'script_server', '/stereo/right/image_color/compressed')
                
     def getCameraAngle(self):
         state = self.getComponentState('head', True)
@@ -32,6 +31,10 @@ class CareOBot(robot.Robot):
         if len(self._ros.getTopics('/%(name)s_controller' % { 'name': name })) == 0:
             self._robInt.initComponent(name)
         
+        #Special handling of the unload_tray moveit code value='trayToTable:height'
+        if name == 'arm' and str(value).startswith('trayToTable'):
+            return self.unloadTray(str(value).split(':')[1], blocking)
+        
         return super(CareOBot, self).setComponentState(name, value, blocking)
     
     def play(self, fileName, blocking=True):
@@ -47,6 +50,44 @@ class CareOBot(robot.Robot):
         
     def sleep(self, milliseconds):
         self.executeFunction("sleep", {'duration': milliseconds / 1000.0 })
+        
+    def unloadTray(self, height, blocking):
+
+        try:
+            h = float(height)
+        except Exception as e:
+            print >> sys.stderr, "Unable to cast height to float, received height: %s" % height
+            
+        try:
+            client = UnloadTrayClient()
+        except Exception as e:
+            print >> sys.stderr, "Unable to initialise UnloadTrayClient. Error: %s" % repr(e)
+            return self._ros._states[4]
+        
+        return client.unloadTray(h, blocking)
+        
+class UnloadTrayClient(object):
+    
+    def __init__(self):
+        self._ros = rosHelper.ROS()
+        self._ros.configureROS(packageName='accompany_user_tests_year2')
+        import actionlib, accompany_user_tests_year2.msg
+        self._ssMsgs = accompany_user_tests_year2.msg
+        
+        self._ros.initROS()
+        self._client = actionlib.SimpleActionClient('/unload_tray', self._ssMsgs.UnloadTrayAction)
+        print "Waiting for unload_tray"
+        self._client.wait_for_server()
+        print "Connected to unload_tray"
+        
+    def unloadTray(self, height, blocking):
+        goal = self._ssMsgs.UnloadTrayGoal()
+        goal.table_height = height
+        
+        if blocking:
+            return self._client.send_goal_and_wait(goal)
+        else:
+            return self._client.send_goal(goal)
     
 class ScriptServer(object):
 
@@ -91,7 +132,9 @@ class ActionLib(object):
         
         self._ros.initROS()
         self._client = actionlib.SimpleActionClient('/script_server', self._ssMsgs.ScriptAction)
+        print "Waiting for script_server"
         self._client.wait_for_server()
+        print "Connected to script_server"
         
     def runFunction(self, funcName, kwargs):
         name = None
@@ -139,8 +182,7 @@ class ActionLib(object):
             func = 'init'
             goal = self._ssMsgs.ScriptGoal(
                               function_name=func.encode('ascii', 'ignore'),
-                              component_name=name.encode('ascii', 'ignore'),
-                              blocking=True)
+                              component_name=name.encode('ascii', 'ignore'))
             return self._client.send_goal_and_wait(goal)
         return 3
     
@@ -174,8 +216,6 @@ class PoseUpdater(robot.PoseUpdater):
         self._rangeThreshold = robot_config[robot.name]['tray']['size'] / 100.0
         self._rangeWindow = robot_config[robot.name]['phidgets']['windowSize']
         self._rangeHistory = {}
-        self._trayState = robot_config[robot.name]['tray']['positions']
-        self._headState = robot_config[robot.name]['head']['positions']
     
     def checkUpdatePose(self, robot):
         states = {}
@@ -185,7 +225,7 @@ class PoseUpdater(robot.PoseUpdater):
         
     def updateStates(self, states):
         for key, value in states.items():
-            if value[1] != None:
+            if value != None and value[1] != None:
                 try:
                     # sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
                     sensor = next(s for s in self._sensors if s['name'] == "%s" % (key))
@@ -207,7 +247,7 @@ class PoseUpdater(robot.PoseUpdater):
         
     def getHeadStates(self, robot):
         return {
-                   'eyePosition': self.getComponentPosition(robot, 'head', self._headState),
+                   'eyePosition': self.getComponentPosition(robot, 'head'),
                    }
     
     def getPhidgetState(self):        
@@ -223,7 +263,8 @@ class PoseUpdater(robot.PoseUpdater):
                 if topic not in self._warned: 
                     self._warned.append(topic)
                     print "Phidget sensor not ready before timeout for topic: %s" % topic
-                    return None
+                
+                return (None, None)
             else:
                 if topic in self._warned:
                     self._warned.remove(topic)
@@ -241,54 +282,42 @@ class PoseUpdater(robot.PoseUpdater):
    
         return (trayIsEmpty, trayIsEmpty)
 
-    def getComponentPosition(self, robot, componentName, positions):
-        state = robot.getComponentState(componentName)
-        if state == None:
+    def getComponentPosition(self, robot, componentName):
+        (state, _) = robot.getComponentState(componentName)
+        if state == None or state == '':
             print "No component state for: %s" % componentName
-            return None
-        else:
-            (name, _) = state
+            state = 'Unknown'
         
-        position = None
-        for key, value in positions.items():
-            if name == value:
-                position = key
-                break
-        
-        # debug code
-        if position == None:
-            position = 'unnamed'
-            print 'Name: %s, Pose: %s' % state
-            
-        # position = position or 'unnamed'
-        return (position, position)
+        return (state, state)
 
     def getTrayStates(self, robot):
         return {
-                   'trayStatus': self.getComponentPosition(robot, 'tray', self._trayState),
+                   'trayStatus': self.getComponentPosition(robot, 'tray'),
                    'trayIs': self.getPhidgetState() }
 
-                
 if __name__ == '__main__':
     from robotFactory import Factory
     robot = Factory.getCurrentRobot()
-    """
-    frequency=math.pi*2/100
-    phase1=2
-    phase2=0
-    phase3=4
-    center=128
-    width=127
-    l=50
-    robot = CareOBot('Care-O-Bot 3.2', 'http://cob3-2-pc1:11311')
-    while True:
-        for i in range(0, l):
-            red = (math.sin(frequency*i + phase1) * width + center) / 255
-            grn = (math.sin(frequency*i + phase2) * width + center) / 255
-            blu = (math.sin(frequency*i + phase3) * width + center) / 255
-            robot.setLight([red, grn, blu])
+    print robot.setComponentState('arm', 'trayToTable:0.45')                
+"""
+if __name__ == '__main__':
+    from robotFactory import Factory
+    robot = Factory.getCurrentRobot()
+#     frequency=math.pi*2/100
+#     phase1=2
+#     phase2=0
+#     phase3=4
+#     center=128
+#     width=127
+#     l=50
+#     robot = CareOBot('Care-O-Bot 3.2', 'http://cob3-2-pc1:11311')
+#     while True:
+#         for i in range(0, l):
+#             red = (math.sin(frequency*i + phase1) * width + center) / 255
+#             grn = (math.sin(frequency*i + phase2) * width + center) / 255
+#             blu = (math.sin(frequency*i + phase3) * width + center) / 255
+#             robot.setLight([red, grn, blu])
 
-    """
     import locations
     from history import SensorLog
     l = locations.RobotLocationProcessor(robot)
@@ -309,3 +338,4 @@ if __name__ == '__main__':
 
     sr.stop()
     rp.stop()
+"""
