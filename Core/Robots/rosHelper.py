@@ -1,12 +1,19 @@
 import time, os, sys
 from subprocess import Popen, PIPE
-from config import ros_config
+
+try:
+    from config import ros_config
+except:
+    ros_config = {}
+    
 from threading import RLock
 
 _threadLock = RLock()
 
 class ROS(object):
-    _envVars = {}    
+    _activeVersion = None
+    _envVars = {}
+    _userVars = None
     _states = {
             0: 'PENDING',
             1: 'ACTIVE',
@@ -89,7 +96,7 @@ class ROS(object):
             try:
                 allTopics = self._rospy.get_published_topics()
             except Exception as e:
-                print "Error while retrieving topics, will retry %s more times." % retry
+                print "Error while retrieving topics, will retry %s more times. Error: " % (retry, e)
                 if(retry > 0):
                     return self.getTopics(baseFilter, exactMatch, retry - 1)
                 else:
@@ -124,17 +131,60 @@ class ROS(object):
             return msgCls
         except Exception as e:
             raise Exception('Error occured while loading message class: %s' % (e))
-        
+    
     @staticmethod
-    def parseRosBash(version=None, onlyDifferent=True):
-        version = version or ros_config['version']
+    def _getUserVars():
+        if ROS._userVars == None:
+            #This is a bit more dangerous as it loads the users .bashrc file in a forced interactive shell
+            #while not actually being in an interactive shell.  any prompts could cause lockups
+            command = ['bash', '-i', '-c', ('%s; env' % ". %s/.bashrc" % os.getenv("HOME")).strip('; ')]
+            pipe = Popen(command, stdout=PIPE, stderr=PIPE)
+            (data, _) = pipe.communicate()
+            env = dict((line.split("=", 1) for line in data.splitlines()))
+            ROS._userVars = env
+        
+        return ROS._userVars
+    
+    @staticmethod
+    def _locateRosOverlayPath():
+        env = ROS._getUserVars()
+            
+        if env.has_key('ROS_PACKAGE_PATH'):
+            return env['ROS_PACKAGE_PATH']
+        
+        return None
+    
+    @staticmethod
+    def _locateRosVersion():
+        if ROS._activeVersion == None:
+            env = ROS._getUserVars()
+            if env.has_key('ROS_DISTRO'):
+                ROS._activeVersion = env['ROS_DISTRO']
+            else:
+                bash = open("%s/.bashrc" % os.getenv("HOME"), "r")
+                bashlines = bash.readlines()
+                # assume the source line is closest to the end
+                for n in range(len(bashlines) - 1, 0, -1):
+                    # strip lines of white spaces, look for source /opt/ros/.../setup.bash command,
+                    # distribution name is between ros/ and next /
+                    if bashlines[n].strip().find("source /opt/ros/") == 0:
+                        line = bashlines[n].strip()
+                        version = line[16:line.find("/", 16)]
+                        print "Active ROS version found: ", version
+                        ROS._activeVersion = version
+                        break
+                    
+        return ROS._activeVersion
+    
+    @staticmethod
+    def _parseRosVersionSetupBash(version, onlyDifferent=True):
         if not ROS._envVars.has_key(version):
             # executes the bash script and exports env vars
             bashScript = '/opt/ros/%s/setup.bash' % version
             diffEnv = {}
             if os.path.exists(bashScript):
-                rosEnv = ROS.parseBashEnviron('source ' + bashScript)
-                baseEnv = ROS.parseBashEnviron()
+                rosEnv = ROS._parseBashEnviron('source ' + bashScript)
+                baseEnv = ROS._parseBashEnviron()
         
                 # find all the variables that ros added/changed
                 for key, value in rosEnv.items():
@@ -148,7 +198,9 @@ class ROS(object):
                 if ros_config.has_key('envVars'):
                     diffEnv.update(ros_config['envVars'])
                     rosEnv.update(ros_config['envVars'])
-
+            else:
+                print >> sys.stderr, "Unable to read ros bash script, file not found: %s" % bashScript
+                
             ROS._envVars[version] = (diffEnv, rosEnv)
 
         if onlyDifferent:
@@ -157,7 +209,7 @@ class ROS(object):
             return ROS._envVars[version][1]
 
     @staticmethod
-    def parseBashEnviron(preCommand=''):
+    def _parseBashEnviron(preCommand=''):
         command = ['bash', '-c', ('%s; env' % preCommand).strip('; ')]
         pipe = Popen(command, stdout=PIPE)
         data = pipe.communicate()[0]
@@ -167,12 +219,22 @@ class ROS(object):
     @staticmethod
     def configureROS(version=None, packagePath=None, packageName=None, rosMaster=None, overlayPath=None):
         """Any values not provided will be read from ros_config in config.py"""
-        version = version or ros_config['version']
-        overlayPath = overlayPath or ros_config['overlayPath']
+        if version == None:
+            if not ros_config.has_key('version'):
+                version = ROS._locateRosVersion()
+            else:
+                version = ros_config['version']
+        
+        if overlayPath == None:
+            if not ros_config.has_key('overlayPath'):
+                overlayPath = ROS._locateRosOverlayPath()
+            else:
+                overlayPath = ros_config['overlayPath']
+
         if(rosMaster == None and ros_config.has_key('rosMaster')):
             rosMaster = ros_config['rosMaster']
 
-        for k, v in ROS.parseRosBash(version).items():
+        for k, v in ROS._parseRosVersionSetupBash(version).items():
             if k == 'PYTHONPATH' and sys.path.count(v) == 0:
                 sys.path.append(v)
             elif not os.environ.has_key(k):
@@ -198,9 +260,11 @@ class ROS(object):
         elif os.environ['ROS_PACKAGE_PATH'].find(path) == -1:
             os.environ['ROS_PACKAGE_PATH'] = ':'.join((path, os.environ['ROS_PACKAGE_PATH']))  
 
-        path = os.path.expanduser(overlayPath)
-        if os.environ['ROS_PACKAGE_PATH'].find(path) == -1:
-            os.environ['ROS_PACKAGE_PATH'] = ':'.join((path, os.environ['ROS_PACKAGE_PATH']))
+        if overlayPath != None:
+            for path in overlayPath.split(':'):
+                path = os.path.expanduser(path)
+                if os.environ['ROS_PACKAGE_PATH'].find(path) == -1:
+                    os.environ['ROS_PACKAGE_PATH'] = ':'.join((path, os.environ['ROS_PACKAGE_PATH']))
 
         path = packagePath or os.path.dirname(os.path.realpath(__file__)) + '/ROS_Packages'
         if os.environ['ROS_PACKAGE_PATH'].find(path) == -1:
