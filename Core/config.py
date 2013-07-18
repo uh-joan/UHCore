@@ -119,16 +119,6 @@ robot_config = {
                                    },
                 }
 
-""" Note: While the defaults for {version} will be read from the setup.bash file, 
-    NO ENVIRONMENT VARIABLES WILL BE READ FROM .bashrc
-    if any overrides are set in .bashrc, they need to be redefined here
-    This is only important when running from within the IDE or an unconfigured bash shell
-"""
-ros_config = {
-    'version': 'groovy',
-    'overlayPath': '~/git',
-    }
-
 siena_config = {
     'likelihood': 0.1
 }

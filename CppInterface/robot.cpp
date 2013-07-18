@@ -55,7 +55,7 @@ Robot::Location Robot::getLocation() {
 		if (!PySequence_Check(pValue)) {
 			//problem!
 		} else {
-			l.name = PyString_AsString(PySequence_GetItem(pValue, 0));
+			l.name = std::string(PyString_AsString(PySequence_GetItem(pValue, 0)));
 			l.x = PyFloat_AsDouble(
 					PySequence_GetItem(PySequence_GetItem(pValue, 1), 0));
 			l.y = PyFloat_AsDouble(
@@ -87,7 +87,7 @@ std::string Robot::setComponentState(std::string name,
 	Py_DECREF(g);
 
 	if (pValue != NULL) {
-		char* ret = PyString_AsString(pValue);
+		std::string ret = std::string(PyString_AsString(pValue));
 		Py_DECREF(pValue);
 		return ret;
 	} else {
@@ -107,7 +107,7 @@ std::string Robot::setComponentState(std::string name, std::string value,
 	/** pValue = "SUCCESS" **/
 
 	if (pValue != NULL) {
-		char* ret = PyString_AsString(pValue);
+		std::string ret = std::string(PyString_AsString(pValue));
 		Py_DECREF(pValue);
 		return ret;
 	} else {
@@ -133,7 +133,7 @@ std::vector<Robot::Position> Robot::getComponentPositions(
 
 			while (PyDict_Next(pValue, &pos, &key, &value)) {
 				Robot::Position p;
-				p.name = PyString_AsString(key);
+				p.name = std::string(PyString_AsString(key));
 				p.positions = parseDoubleArray(value);
 				ret.push_back(p);
 			}
@@ -160,7 +160,7 @@ std::vector<std::string> Robot::parseStringArray(PyObject* array) {
 	std::vector<std::string> ret = std::vector<std::string>();
 	if (PySequence_Check(array)) {
 		for (int i = 0; i < PySequence_Size(array); i++) {
-			ret.push_back(PyString_AsString(PySequence_GetItem(array, i)));
+			ret.push_back(std::string(PyString_AsString(PySequence_GetItem(array, i))));
 		}
 	}
 
@@ -189,7 +189,7 @@ Robot::State Robot::getComponentState(std::string componentName) {
 		if (!PySequence_Check(pValue)) {
 			//Error!
 		} else {
-			s.name = PyString_AsString(PySequence_GetItem(pValue, 0));
+			s.name = std::string(PyString_AsString(PySequence_GetItem(pValue, 0)));
 			PyObject* values = PySequence_GetItem(pValue, 1);
 			if (PyDict_Check(values)) {
 				PyObject* key = PyString_FromString("goals");
@@ -249,7 +249,9 @@ char* Robot::getImage(std::string retFormat) {
 
 	char* img = NULL;
 	if (pValue != NULL) {
-		img = PyString_AsString(pValue);
+		char* src = PyString_AsString(pValue);
+		img = new char[strlen(src)];
+		strcpy(img, src);
 		Py_DECREF(pValue);
 	}
 
