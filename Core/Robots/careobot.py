@@ -85,9 +85,9 @@ class UnloadTrayClient(object):
         goal.table_height = height
         
         if blocking:
-            return self._client.send_goal_and_wait(goal)
+            return self._ros._states[self._client.send_goal_and_wait(goal)]
         else:
-            return self._client.send_goal(goal)
+            return self._ros._states[self._client.send_goal(goal)]
     
 class ScriptServer(object):
 
@@ -294,12 +294,7 @@ class PoseUpdater(robot.PoseUpdater):
         return {
                    'trayStatus': self.getComponentPosition(robot, 'tray'),
                    'trayIs': self.getPhidgetState() }
-
-if __name__ == '__main__':
-    from robotFactory import Factory
-    robot = Factory.getCurrentRobot()
-    print robot.setComponentState('arm', 'trayToTable:0.45')                
-"""
+            
 if __name__ == '__main__':
     from robotFactory import Factory
     robot = Factory.getCurrentRobot()
@@ -338,4 +333,3 @@ if __name__ == '__main__':
 
     sr.stop()
     rp.stop()
-"""
