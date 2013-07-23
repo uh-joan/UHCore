@@ -287,6 +287,8 @@ class ZigBeeDirect(PollingProcessor):
 				channels = self._zigbee._parse_samples(data['rf_data'])[0] # Parse IO data
 			except Exception as e:
 				print >> sys.stderr, "Error reading zigbee data: %s" % e
+				return
+
 			for channel, _value in channels.items():
 				channel = "!" + channel.lower()
 
