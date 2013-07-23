@@ -15,7 +15,7 @@ PyObject* Robot::getDefaultClassInstance() {
 	if (pInstance == NULL) {
 		PyObject* pClass = getClassObject("Robots.robotFactory", "Factory");
 		if (pClass == NULL) {
-			std::cout
+			std::cerr
 					<< "Error locating class object Robots.robotFactory.Factory"
 					<< std::endl;
 			return NULL;
@@ -38,11 +38,23 @@ PyObject* Robot::getDefaultClassInstance() {
 void Robot::setLight(int color[]) {
 	PyObject *pValue = callMethod("setLight", "([i,i,i])", color[0], color[1],
 			color[2]);
+	if(pValue == NULL) {
+		std::cerr << "Error while calling setLight (" << color[0] << "," << color[1] << "," << color[2] << ")" << std::endl;
+		PyErr_Print();
+		PyErr_Clear();
+	}
+
 	Py_XDECREF(pValue);
 }
 
 void Robot::setLight(std::string color) {
 	PyObject *pValue = callMethod("setLight", color);
+	if(pValue == NULL) {
+		std::cerr << "Error while calling setLight (" << color << ")" << std::endl;
+		PyErr_Print();
+		PyErr_Clear();
+	}
+
 	Py_XDECREF(pValue);
 }
 
@@ -91,8 +103,9 @@ std::string Robot::setComponentState(std::string name,
 		Py_DECREF(pValue);
 		return ret;
 	} else {
-		std::cout << "Error while calling method" << '\n';
+		std::cerr << "Error while calling setComponentState (" << name << "," << "{vectorGoals}" << ")" << std::endl;
 		PyErr_Print();
+		PyErr_Clear();
 	}
 
 	return "Error";
@@ -111,8 +124,9 @@ std::string Robot::setComponentState(std::string name, std::string value,
 		Py_DECREF(pValue);
 		return ret;
 	} else {
-		std::cout << "Error while calling method" << '\n';
+		std::cerr << "Error while calling setComponentState (" << name << "," << value << ")" << std::endl;
 		PyErr_Print();
+		PyErr_Clear();
 	}
 
 	return "Error";

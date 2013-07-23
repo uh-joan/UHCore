@@ -16,17 +16,17 @@ PythonInterface::PythonInterface(std::string modulePath) {
 
 PythonInterface::~PythonInterface() {
 
-	for (std::map<std::string, PyObject*>::iterator ii =
-			pObjectCache.begin(); ii != pObjectCache.end(); ++ii) {
+	for (std::map<std::string, PyObject*>::iterator ii = pObjectCache.begin();
+			ii != pObjectCache.end(); ++ii) {
 		Py_DECREF((*ii).second);
 	}
 
 	Py_Finalize();
 }
 
-PyObject* PythonInterface::getClassObject(std::string moduleName, std::string className) {
+PyObject* PythonInterface::getClassObject(std::string moduleName,
+		std::string className) {
 	if (!modulePath.empty()) {
-
 		PyRun_SimpleString("import sys");
 		PyRun_SimpleString(
 				("sys.path.append(\"" + std::string(modulePath) + "\")").c_str());
@@ -36,6 +36,17 @@ PyObject* PythonInterface::getClassObject(std::string moduleName, std::string cl
 	PyObject *pName = PyString_FromString(modName.c_str());
 	PyObject *pModule = PyImport_Import(pName);
 	Py_DECREF(pName);
+
+	if (pModule == NULL) {
+		std::cerr << "Error while importing module: " << moduleName << std::endl;
+		if(!modulePath.empty()) {
+			std::cerr << " Base module path: " << modulePath << std::endl;
+		}
+		std::cerr << " Check that the module path and name are correct" << std::endl;
+		PyErr_Print();
+		PyErr_Clear();
+		return NULL;
+	}
 
 	char* fileName = PyModule_GetFilename(pModule);
 	char* argv[1] = { fileName };
@@ -47,10 +58,18 @@ PyObject* PythonInterface::getClassObject(std::string moduleName, std::string cl
 	PyObject *pClass = PyDict_GetItemString(pDict, className.c_str());
 	Py_DECREF(pDict);
 
+	if (pClass == NULL) {
+		std::cerr << "Error while getting class definition for " << className << std::endl;
+		PyErr_Print();
+		PyErr_Clear();
+		return NULL;
+	}
+
 	return pClass;
 }
 
-PyObject* PythonInterface::getClassInstance(std::string moduleName, std::string className, PyObject *pClassArgs) {
+PyObject* PythonInterface::getClassInstance(std::string moduleName,
+		std::string className, PyObject *pClassArgs) {
 	if (pObjectCache.find(moduleName + className) == pObjectCache.end()) {
 		PyObject *pClass = getClassObject(moduleName, className);
 
@@ -60,7 +79,16 @@ PyObject* PythonInterface::getClassInstance(std::string moduleName, std::string 
 			Py_DECREF(temp);
 		}
 
-		pObjectCache[moduleName + className] = PyObject_CallObject(pClass, pClassArgs);
+		PyObject* pInstance = PyObject_CallObject(pClass, pClassArgs);
+
+		if (pClass == NULL) {
+			std::cerr << "Error while getting instance of " << className << " in module " << moduleName << std::endl;
+			PyErr_Print();
+			PyErr_Clear();
+			return NULL;
+		}
+
+		pObjectCache[moduleName + className] = pInstance;
 
 		Py_DECREF(pClass);
 		Py_XDECREF(pClassArgs);

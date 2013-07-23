@@ -54,6 +54,11 @@ private:
 
 template<typename T, typename R, typename K>
 PyObject* PythonInterface::callMethod(PyObject* instance, std::string methodName, std::string argFormat, T arg1, R arg2, K arg3) {
+	if (instance == NULL) {
+		std::cerr << "Cannot call method " << methodName << " on NULL instance" << std::endl;
+		return NULL;
+	}
+
 	char* m = strdup(methodName.c_str());
 
 	PyObject *pValue;
@@ -67,7 +72,7 @@ PyObject* PythonInterface::callMethod(PyObject* instance, std::string methodName
 	if (pValue != NULL) {
 		return pValue;
 	} else {
-		std::cout << "Error while calling method" << '\n';
+		std::cerr << "Error while calling method " << methodName << std::endl;
 		PyErr_Print();
 		PyErr_Clear();
 		return NULL;
@@ -77,6 +82,11 @@ PyObject* PythonInterface::callMethod(PyObject* instance, std::string methodName
 template<typename T, typename R>
 PyObject* PythonInterface::callMethod(PyObject* instance,
 		std::string methodName, std::string argFormat, T arg1, R arg2) {
+	if (instance == NULL) {
+		std::cerr << "Cannot call method " << methodName << " on NULL instance" << std::endl;
+		return NULL;
+	}
+
 	char* m = strdup(methodName.c_str());
 
 	PyObject *pValue;
@@ -90,7 +100,7 @@ PyObject* PythonInterface::callMethod(PyObject* instance,
 	if (pValue != NULL) {
 		return pValue;
 	} else {
-		std::cout << "Error while calling method" << '\n';
+		std::cerr << "Error while calling method " << methodName << std::endl;
 		PyErr_Print();
 		PyErr_Clear();
 		return NULL;
@@ -100,6 +110,11 @@ PyObject* PythonInterface::callMethod(PyObject* instance,
 template<typename T>
 PyObject* PythonInterface::callMethod(PyObject* instance,
 		std::string methodName, std::string argFormat, T arg) {
+	if (instance == NULL) {
+		std::cerr << "Cannot call method " << methodName << " on NULL instance" << std::endl;
+		return NULL;
+	}
+
 	char* m = strdup(methodName.c_str());
 
 	PyObject *pValue;
@@ -113,7 +128,7 @@ PyObject* PythonInterface::callMethod(PyObject* instance,
 	if (pValue != NULL) {
 		return pValue;
 	} else {
-		std::cout << "Error while calling method" << '\n';
+		std::cerr << "Error while calling method " << methodName << std::endl;
 		PyErr_Print();
 		PyErr_Clear();
 		return NULL;

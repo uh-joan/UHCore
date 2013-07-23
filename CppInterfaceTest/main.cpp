@@ -26,7 +26,7 @@ string vectorPrint(vector<T> v) {
 
 int main(int argc, char *argv[]) {
 
-	string modulePath = "/home/nathan/git/UHCore/Core";
+	string modulePath = "/home/accompany/git/uh-adapsys/accompany/UHCore/Core";
 //	ActionHistory *hist = new ActionHistory(modulePath);
 //	string ruleName = "testPythonInterface";
 //	cout << hist->addHistory(ruleName) << '\n';
@@ -57,29 +57,29 @@ int main(int argc, char *argv[]) {
 //	result = rob->setComponentState("base", newPos, true);
 //	cout << "Rotate 90 degrees: " << result << endl;
 
-	result = rob->setComponentState("base", "userLocation", true);
-	cout << "Robot to user: " << result << endl;
+//	result = rob->setComponentState("base", "userLocation", true);
+//	cout << "Robot to user: " << result << endl;
 
-//	result = rob->setComponentState("tray", "raised", false);
+//	result = rob->setComponentState("tray", "raised", true);
 //	cout << "Set tray to 'raised', result: " << result << endl;
-//
-//	result = rob->setComponentState("torso", "left", true);
-//	cout << "Set torso to 'left', result: " << result << endl;
-//
-//	cout << "Sleep for 500ms...";
-//	rob->sleep(500);
-//	cout << "Done." << endl;
-//
-//	int red[] = { 1, 0, 0 };
-//	rob->setLight(red);
-//	cout << "Set light to [1,0,0]" << endl;
-//
-//	rob->setLight("white");
-//	cout << "Set light to 'white'" << endl;
 
-	//rob->play("filename.wav");
-	//rob->say("test");
-	//rob->say("test", "en-us");
+//	result = rob->setComponentState("torso", "shake", true);
+//	cout << "Set torso to 'left', result: " << result << endl;
+
+	cout << "Sleep for 500ms..." << endl;
+	rob->sleep(500);
+	cout << "Done." << endl;
+
+	int red[] = { 1, 0, 0 };
+	rob->setLight(red);
+	cout << "Set light to [1,0,0]" << endl;
+
+	rob->setLight("white");
+	cout << "Set light to 'white'" << endl;
+
+//	rob->play("filename.wav");
+//	rob->say("test");
+//	rob->say("test", "en-us");
 
 	cout << "Done" << endl;
 

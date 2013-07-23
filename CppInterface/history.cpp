@@ -42,8 +42,9 @@ char* ActionHistory::addPollingHistory(std::string ruleName,
 		Py_DECREF(pValue);
 		return ret;
 	} else {
-		std::cout << "Error while calling method" << '\n';
+		std::cerr << "Error while calling method" << std::endl;
 		PyErr_Print();
+		PyErr_Clear();
 		return NULL;
 	}
 }
