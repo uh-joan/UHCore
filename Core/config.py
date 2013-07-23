@@ -6,9 +6,9 @@ server_config = {
   'http_port':       1055,
 
   # The settings for the channel logging MySQL server / database / table
-  'mysql_log_server':   'rh-database',
-  'mysql_log_user':     'rhUser',
-  'mysql_log_password': 'waterloo',
+  'mysql_log_server':   'Accompany1',
+  'mysql_log_user':     'accompanyUser',
+  'mysql_log_password': 'accompany',
   'mysql_log_db':       'Accompany',
   'mysql_log_table':    'SensorLog',
   
@@ -68,7 +68,7 @@ locations_config = {
 
 robot_config = {
                 'Care-O-Bot 3.2': {
-                                   'phidgets': { 'topics': ['/range_0', '/range_1', '/range_2', '/range_3'], 'windowSize': 5, 'distance': 20 },
+                                   'phidgets': { 'topics': ['/range_0', '/range_1', '/range_2', '/range_3'], 'windowSize': 5 },
                                    'tray': { 
                                                 'positions': { 
                                                               'raised': 'up',
@@ -89,10 +89,11 @@ robot_config = {
                                             },
                                    },
                 'Care-O-Bot 3.6': {
-                                   'phidgets': {'topics': ['/tray_sensors/range_0', '/tray_sensors/range_1', '/tray_sensors/range_2', '/tray_sensors/range_3'], 'windowSize': 5, 'distance': 10 },
+                                   'phidgets': {'topics': ['/tray_sensors/range_0', '/tray_sensors/range_1', '/tray_sensors/range_2', '/tray_sensors/range_3'], 'windowSize': 5 },
                                    'tray': { 
                                                 'positions': {
                                                               'raised': 'deliverup',
+                                                              'raised': 'home',
                                                               'lowered': 'store'
                                                               },
                                                 'size' : 10
