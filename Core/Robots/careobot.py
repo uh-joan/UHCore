@@ -285,7 +285,7 @@ class PoseUpdater(robot.PoseUpdater):
     def getComponentPosition(self, robot, componentName):
         (state, _) = robot.getComponentState(componentName)
         if state == None or state == '':
-            print "No component state for: %s" % componentName
+            print "No named component state for: %s." % (componentName)
             state = 'Unknown'
         
         return (state, state)
