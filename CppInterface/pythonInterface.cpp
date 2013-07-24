@@ -19,7 +19,6 @@ PythonInterface::PythonInterface(std::string modulePath) {
 	if (!Py_IsInitialized()) {
 		Py_Initialize();
 		PyEval_InitThreads();
-		PyEval_ReleaseLock();
 		std::cout << "Python Initialized" << std::endl;
 	}
 }
