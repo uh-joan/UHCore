@@ -6,30 +6,42 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+PythonLock::PythonLock() {
+	gstate = PyGILState_Ensure();
+}
+
+PythonLock::~PythonLock() {
+	PyGILState_Release(gstate);
+}
+
 PythonInterface::PythonInterface(std::string modulePath) {
 	PythonInterface::modulePath = modulePath;
 	if (!Py_IsInitialized()) {
 		Py_Initialize();
+		PyEval_InitThreads();
+		PyEval_ReleaseLock();
 		std::cout << "Python Initialized" << std::endl;
 	}
 }
 
 PythonInterface::~PythonInterface() {
+	{
+		PythonLock lock = PythonLock();
 
-	for (std::map<std::string, PyObject*>::iterator ii = pObjectCache.begin();
-			ii != pObjectCache.end(); ++ii) {
-		Py_DECREF((*ii).second);
+		for (std::map<std::string, PyObject*>::iterator ii = pObjectCache.begin(); ii != pObjectCache.end(); ++ii) {
+			Py_DECREF((*ii).second);
+		}
 	}
 
 	Py_Finalize();
 }
 
-PyObject* PythonInterface::getClassObject(std::string moduleName,
-		std::string className) {
+PyObject* PythonInterface::getClassObject(std::string moduleName, std::string className) {
+	PythonLock lock = PythonLock();
+
 	if (!modulePath.empty()) {
 		PyRun_SimpleString("import sys");
-		PyRun_SimpleString(
-				("sys.path.append(\"" + std::string(modulePath) + "\")").c_str());
+		PyRun_SimpleString(("sys.path.append(\"" + std::string(modulePath) + "\")").c_str());
 	}
 
 	std::string modName = moduleName;
@@ -39,7 +51,7 @@ PyObject* PythonInterface::getClassObject(std::string moduleName,
 
 	if (pModule == NULL) {
 		std::cerr << "Error while importing module: " << moduleName << std::endl;
-		if(!modulePath.empty()) {
+		if (!modulePath.empty()) {
 			std::cerr << " Base module path: " << modulePath << std::endl;
 		}
 		std::cerr << " Check that the module path and name are correct" << std::endl;
@@ -62,38 +74,43 @@ PyObject* PythonInterface::getClassObject(std::string moduleName,
 		std::cerr << "Error while getting class definition for " << className << std::endl;
 		PyErr_Print();
 		PyErr_Clear();
-		return NULL;
 	}
 
 	return pClass;
 }
 
-PyObject* PythonInterface::getClassInstance(std::string moduleName,
-		std::string className, PyObject *pClassArgs) {
+PyObject* PythonInterface::getClassInstance(std::string moduleName, std::string className, PyObject *pClassArgs) {
+
 	if (pObjectCache.find(moduleName + className) == pObjectCache.end()) {
 		PyObject *pClass = getClassObject(moduleName, className);
-
-		if (pClassArgs != NULL && !PyTuple_Check(pClassArgs)) {
-			PyObject *temp = pClassArgs;
-			pClassArgs = PyTuple_Pack(1, temp);
-			Py_DECREF(temp);
-		}
-
-		PyObject* pInstance = PyObject_CallObject(pClass, pClassArgs);
-
 		if (pClass == NULL) {
-			std::cerr << "Error while getting instance of " << className << " in module " << moduleName << std::endl;
-			PyErr_Print();
-			PyErr_Clear();
 			return NULL;
 		}
 
-		pObjectCache[moduleName + className] = pInstance;
+		{
+			PythonLock lock = PythonLock();
+			if (pClassArgs != NULL && !PyTuple_Check(pClassArgs)) {
+				PyObject *temp = pClassArgs;
+				pClassArgs = PyTuple_Pack(1, temp);
+				Py_DECREF(temp);
+			}
 
-		Py_DECREF(pClass);
-		Py_XDECREF(pClassArgs);
+			PyObject* pInstance = PyObject_CallObject(pClass, pClassArgs);
+			if (pInstance == NULL) {
+				std::cerr << "Error while getting instance of " << className << " in module " << moduleName
+						<< std::endl;
+				PyErr_Print();
+				PyErr_Clear();
+				return NULL;
+			}
 
-		std::cout << moduleName << " Initialized" << std::endl;
+			pObjectCache[moduleName + className] = pInstance;
+
+			Py_DECREF(pClass);
+			Py_XDECREF(pClassArgs);
+
+			std::cout << moduleName << " Initialized" << std::endl;
+		}
 	}
 
 	return pObjectCache[moduleName + className];

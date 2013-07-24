@@ -26,7 +26,9 @@ class ProxemicMover(object):
             raise Exception("no robot specified")
         
         try:
+            print "Waiting for accompany_proxemics"
             self._rospy.wait_for_service('accompany_context_aware_planner/get_potential_proxemics_locations', 5)
+            print "Connected to accompany_proxemics"
         except self._rospy.ROSException:
             print >> sys.stderr, "get_potential_proxemics_locations not ready within timeout"
             raise Exception("proxemics module not running or broken")

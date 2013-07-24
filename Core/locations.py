@@ -108,9 +108,17 @@ class HumanLocationProcessor(LocationProcessor):
     def _getCurrentLoc(self):
 
         locs = self._ros.getSingleMessage(self._topic)
-        if len(locs.trackedHumans) > 0:
-            loc = locs.trackedHumans[0]
-        else:
+        if locs == None:
+            print "No message recieved from %s" % self._topic
+            return ('', (None, None, None))
+        
+        loc = None
+        for human in locs.trackedHumans:
+            if human.specialFlag == 1:
+                loc = human
+                break
+        if loc == None:
+            print "No human returned from location tracker"
             return ('', (None, None, None))
         
         x = loc.location.point.x + self._transformMatrix[0]

@@ -14,17 +14,6 @@ class ROS(object):
     _activeVersion = None
     _envVars = {}
     _userVars = None
-    _states = {
-            0: 'PENDING',
-            1: 'ACTIVE',
-            2: 'PREEMPTED',
-            3: 'SUCCEEDED',
-            4: 'ABORTED',
-            5: 'REJECTED',
-            6: 'PREEMPTING',
-            7: 'RECALLING',
-            8: 'RECALLED',
-            9: 'LOST'}
     
     def __init__(self, *args, **kwargs):
         ROS.configureROS(packageName='rospy')

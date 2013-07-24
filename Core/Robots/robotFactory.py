@@ -1,7 +1,5 @@
 from Data.dataAccess import Robots, Locations
 import sys
-import careobot
-import sunflower
 
 class Factory(object):
 
@@ -27,11 +25,16 @@ class Factory(object):
             return Factory.getCurrentRobot()
         
         print "Building class for %s" % robotName
-        if robotName.startswith('Care-O-Bot'):
+        if robotName.lower().startswith('care-o-bot'):
+            import careobot
             cobVersion = robotName[11:].replace('.', '-')
             rosMaster = "http://cob%s-pc1:11311" % cobVersion
             return careobot.CareOBot(robotName, rosMaster)
-        if robotName.startswith('UH Sunflower'):
+        if robotName.lower().startswith('sunflower'):
+            import sunflower
             return sunflower.Sunflower(robotName)
+        if robotName.lower().startswith('dummy'):
+            import dummy
+            return dummy.DummyRobot(robotName)
         else:
-            print "Unknown robot %s" % robotName
+            print >> sys.stderr, "Unknown robot %s" % robotName

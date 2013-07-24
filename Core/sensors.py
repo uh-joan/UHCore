@@ -288,7 +288,7 @@ class ZigBeeDirect(PollingProcessor):
 			except Exception as e:
 				print >> sys.stderr, "Error reading zigbee data: %s" % e
 				return
-
+			
 			for channel, _value in channels.items():
 				channel = "!" + channel.lower()
 

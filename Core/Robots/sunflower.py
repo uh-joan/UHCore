@@ -1,7 +1,7 @@
 import math
-from robot import Robot
+from robot import ROSRobot
 
-class Sunflower(Robot):
+class Sunflower(ROSRobot):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name='Sunflower'):
