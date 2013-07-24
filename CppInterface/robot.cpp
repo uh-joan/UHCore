@@ -12,7 +12,6 @@ Robot::Robot(std::string modulePath, std::string robotName) :
 }
 
 PyObject* Robot::getDefaultClassInstance() {
-	std::cout << "getDefaultClassInstance start" << std::endl;
 	if (pInstance == NULL) {
 		PyObject* pClass = getClassObject("Robots.robotFactory", "Factory");
 		if (pClass == NULL) {
@@ -33,7 +32,6 @@ PyObject* Robot::getDefaultClassInstance() {
 		}
 	}
 
-	std::cout << "getDefaultClassInstance end" << std::endl;
 	return pInstance;
 }
 
