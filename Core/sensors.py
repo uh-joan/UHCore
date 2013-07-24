@@ -20,11 +20,14 @@ class _valueHelper(object):
 			if val < 0:
 				val = 0
 		elif sensorType == 'POWER_CONSUMPTION_MONITOR':
-			val = '%.1f' % val
+			try:
+				val = '%.1f' % float(val)
+			except Exception as e:
+				print "Err: %s" % val
 		elif value == True: #1 and 0 are preferred for value
-			value = 1
+			val = 1
 		elif value == False:
-			value = 0
+			val = 0
 		return val
 
 ################################################################################
@@ -280,7 +283,12 @@ class ZigBeeDirect(PollingProcessor):
 			mac = repr(data['source_addr_long']).replace('\\x', ':').strip(":'").lower()
 			
 			# If NI (Network Id)recognised include NI string in returned values
-			channels = self._zigbee._parse_samples(data['rf_data'])[0] # Parse IO data
+			try:
+				channels = self._zigbee._parse_samples(data['rf_data'])[0] # Parse IO data
+			except Exception as e:
+				print >> sys.stderr, "Error reading zigbee data: %s" % e
+				return
+			
 			for channel, _value in channels.items():
 				channel = "!" + channel.lower()
 

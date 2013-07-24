@@ -8,6 +8,7 @@ class StateResolver(object):
         self._movingAverageCache = {}
         self._sensorTypeCache = {}
         self._movingAverageCacheLength = 20
+        self._warned = {}
     
     def isSensorOn(self, sensor):
         rule = sensor['sensorRule']
@@ -39,7 +40,9 @@ class StateResolver(object):
         elif sensorType == 'LEVEL_SENSOR_SWITCH':
             return float(value) == 1
         else:
-            print "Unknown boolean sensorType: %s, defaulting to 0 == False all else True" 
+            if not self._warned.has_key(sensorType):
+                print "Unknown boolean sensorType: %s, defaulting to 0 == False all else True" % sensorType
+                self._warned[sensorType] = True
             try:
                 return float(value) != 0
             except:

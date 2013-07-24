@@ -19,48 +19,57 @@ PyObject* ActionHistory::getDefaultClassInstance() {
 
 bool ActionHistory::cancelPollingHistory(std::string ruleName) {
 	PyObject* pValue = callMethod("cancelPollingHistory", ruleName);
-	bool ret = false;
-	if (PyObject_IsTrue(pValue)) {
-		ret = true;
-	}
 
-	Py_DECREF(pValue);
+	bool ret;
+	{
+		PythonLock lock = PythonLock();
+		ret = PyObject_IsTrue(pValue);
+
+		Py_DECREF(pValue);
+	}
 
 	return ret;
 }
 
-char* ActionHistory::addPollingHistory(std::string ruleName,
-		float delaySeconds) {
-
+char* ActionHistory::addPollingHistory(std::string ruleName, float delaySeconds) {
 	char* m = strdup("addPollingHistory");
 	char* f = strdup("(sf)");
-	PyObject *pValue = PyObject_CallMethod(getDefaultClassInstance(), m, f,
-			ruleName.c_str(), delaySeconds);
 
-	if (pValue != NULL) {
-		char* ret = PyString_AsString(pValue);
-		Py_DECREF(pValue);
-		return ret;
-	} else {
-		std::cout << "Error while calling method" << '\n';
-		PyErr_Print();
-		return NULL;
+	PyObject *pValue = callMethod(m, f, ruleName.c_str(), delaySeconds);
+
+	char* ret;
+	{
+		PythonLock lock = PythonLock();
+		if (pValue != NULL) {
+			ret = PyString_AsString(pValue);
+			Py_DECREF(pValue);
+		} else {
+			std::cerr << "Error while calling method" << std::endl;
+			PyErr_Print();
+			PyErr_Clear();
+		}
 	}
+
+	return ret;
 }
 
 void ActionHistory::addHistoryAsync(std::string ruleName) {
+
 	PyObject* pValue = callMethod("addHistoryAsync", ruleName);
-	Py_DECREF(pValue);
+	{
+		PythonLock lock = PythonLock();
+		Py_DECREF(pValue);
+	}
 }
 
 bool ActionHistory::addHistory(std::string ruleName) {
 	PyObject* pValue = callMethod("addHistory", ruleName);
-	bool ret = false;
-	if (PyObject_IsTrue(pValue)) {
-		ret = true;
+	bool ret;
+	{
+		PythonLock lock = PythonLock();
+
+		ret = PyObject_IsTrue(pValue);
+		Py_DECREF(pValue);
 	}
-
-	Py_DECREF(pValue);
-
 	return ret;
 }

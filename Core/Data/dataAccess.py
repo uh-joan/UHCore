@@ -236,10 +236,10 @@ class Users(object):
         return self._sql.getData(sql, args)
     
     def updateUser(self, user):
-        sql = "UPDATE `%(user)s` " % self._userTable
+        sql = "UPDATE `%(user)s` " % { 'user': self._userTable }
         sql += "\
                 SET \
-                    `firstName` = %(firstname)s, \
+                    `firstName` = %(firstName)s, \
                     `lastName` = %(lastName)s, \
                     `nickname` = %(nickname)s, \
                     `locationId` = %(locationId)s, \

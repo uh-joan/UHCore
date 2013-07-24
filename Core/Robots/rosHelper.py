@@ -14,17 +14,6 @@ class ROS(object):
     _activeVersion = None
     _envVars = {}
     _userVars = None
-    _states = {
-            0: 'PENDING',
-            1: 'ACTIVE',
-            2: 'PREEMPTED',
-            3: 'SUCCEEDED',
-            4: 'ABORTED',
-            5: 'REJECTED',
-            6: 'PREEMPTING',
-            7: 'RECALLING',
-            8: 'RECALLED',
-            9: 'LOST'}
     
     def __init__(self, *args, **kwargs):
         ROS.configureROS(packageName='rospy')
@@ -96,7 +85,7 @@ class ROS(object):
             try:
                 allTopics = self._rospy.get_published_topics()
             except Exception as e:
-                print "Error while retrieving topics, will retry %s more times. Error: " % (retry, e)
+                print "Error while retrieving topics, will retry %s more times. Error: %s" % (retry, e)
                 if(retry > 0):
                     return self.getTopics(baseFilter, exactMatch, retry - 1)
                 else:

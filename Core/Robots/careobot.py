@@ -5,7 +5,7 @@ from config import robot_config
 from exceptions import StopIteration
 from collections import deque
 
-class CareOBot(robot.Robot):
+class CareOBot(robot.ROSRobot):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name, rosMaster):
@@ -223,28 +223,6 @@ class PoseUpdater(robot.PoseUpdater):
         states.update(self.getHeadStates(robot))
         self.updateStates(states)
         
-    def updateStates(self, states):
-        for key, value in states.items():
-            if value != None and value[1] != None:
-                try:
-                    # sensor = next(s for s in self._sensors if s['ChannelDescriptor'] == "%s:%s" % (self._robot.name, key))
-                    sensor = next(s for s in self._sensors if s['name'] == "%s" % (key))
-                    if key in self._warned:
-                        self._warned.remove(key)
-                except StopIteration:
-                    if key not in self._warned:
-                        print >> sys.stderr, "Warning: Unable to locate sensor record for %s sensor %s." % (self._robot.name, key)
-                        self._warned.append(key)
-                    continue
-                
-                _id = sensor['sensorId']
-                self._channels[key] = {
-                                         'id': _id,
-                                         'room': self._robot.name,
-                                         'channel': key,
-                                         'value': value[0],
-                                         'status': value[1] }
-        
     def getHeadStates(self, robot):
         return {
                    'eyePosition': self.getComponentPosition(robot, 'head'),
@@ -285,7 +263,7 @@ class PoseUpdater(robot.PoseUpdater):
     def getComponentPosition(self, robot, componentName):
         (state, _) = robot.getComponentState(componentName)
         if state == None or state == '':
-            print "No component state for: %s" % componentName
+            print "No named component state for: %s." % (componentName)
             state = 'Unknown'
         
         return (state, state)

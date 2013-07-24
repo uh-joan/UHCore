@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lUHCore -lpython2.7
+LIBS := -lUHCore -lboost_thread-mt -lpython2.7
 
