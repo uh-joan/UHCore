@@ -58,6 +58,7 @@ protected:
 private:
 	std::string modulePath;
 	std::map<std::string, PyObject*> pObjectCache;
+	PyThreadState* threadState;
 };
 
 template<typename T, typename R, typename K>
@@ -67,9 +68,7 @@ PyObject* PythonInterface::callMethod(PyObject* instance, std::string methodName
 	if (instance == NULL) {
 		std::cerr << "Cannot call method " << methodName << " on NULL instance" << std::endl;
 	} else {
-
 		char* m = strdup(methodName.c_str());
-
 		{
 			PythonLock lock = PythonLock();
 			if (!argFormat.empty()) {
@@ -97,9 +96,7 @@ PyObject* PythonInterface::callMethod(PyObject* instance, std::string methodName
 	if (instance == NULL) {
 		std::cerr << "Cannot call method " << methodName << " on NULL instance" << std::endl;
 	} else {
-
 		char* m = strdup(methodName.c_str());
-
 		{
 			PythonLock lock = PythonLock();
 			if (!argFormat.empty()) {
@@ -127,7 +124,6 @@ PyObject* PythonInterface::callMethod(PyObject* instance, std::string methodName
 		std::cerr << "Cannot call method " << methodName << " on NULL instance" << std::endl;
 	} else {
 		char* m = strdup(methodName.c_str());
-
 		{
 			PythonLock lock = PythonLock();
 			if (!argFormat.empty()) {

@@ -24,17 +24,24 @@ class Factory(object):
         if robotName == None or robotName == '':
             return Factory.getCurrentRobot()
         
-        print "Building class for %s" % robotName
+        print "Building class for robot named: %s" % robotName
+        robot = None
         if robotName.lower().startswith('care-o-bot'):
+            print "Found cob"
             import careobot
             cobVersion = robotName[11:].replace('.', '-')
             rosMaster = "http://cob%s-pc1:11311" % cobVersion
-            return careobot.CareOBot(robotName, rosMaster)
+            robot = careobot.CareOBot(robotName, rosMaster)
         if robotName.lower().startswith('sunflower'):
+            print "Found sf"
             import sunflower
-            return sunflower.Sunflower(robotName)
+            robot = sunflower.Sunflower(robotName)
         if robotName.lower().startswith('dummy'):
+            print "Found dummy"
             import dummy
-            return dummy.DummyRobot(robotName)
+            robot = dummy.DummyRobot(robotName)
         else:
             print >> sys.stderr, "Unknown robot %s" % robotName
+
+        print "Finished building class %s" % robot.__class__.__name__
+        return robot

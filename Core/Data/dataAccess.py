@@ -848,10 +848,10 @@ class SQLDao(object):
             try:
                 self._conn = MySQLdb.connect(self._host, self._user, self._pass, self._db)
             except Exception as e:
-                print >> sys.stderr, e
-                
                 # Access denied error == 1045, no reason to retry
-                if e.args[0] != 1045 and retry > 0:
+                # Unknown MySQL server host == 2005
+                if e.args[0] not in [1045, 2005] and retry > 0:
+                    print >> sys.stderr, "Error while connecting: %s, will auto-retry %s more times." % (e, retry)
                     return self._getCursor(retry - 1)
                 else:
                     raise e

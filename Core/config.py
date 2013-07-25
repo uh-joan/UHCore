@@ -6,9 +6,9 @@ server_config = {
   'http_port':       1055,
 
   # The settings for the channel logging MySQL server / database / table
-  'mysql_log_server':   'Accompany1',
-  'mysql_log_user':     'accompanyUser',
-  'mysql_log_password': 'accompany',
+  'mysql_log_server':   'rh-database',
+  'mysql_log_user':     'rhUser',
+  'mysql_log_password': 'waterloo',
   'mysql_log_db':       'Accompany',
   'mysql_log_table':    'SensorLog',
   

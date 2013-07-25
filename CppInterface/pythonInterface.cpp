@@ -7,29 +7,34 @@
 #include <stdarg.h>
 
 PythonLock::PythonLock() {
-	gstate = PyGILState_Ensure();
+	if (PyEval_ThreadsInitialized()) {
+		gstate = PyGILState_Ensure();
+	}
 }
 
 PythonLock::~PythonLock() {
-	PyGILState_Release(gstate);
+	if (PyEval_ThreadsInitialized()) {
+		PyGILState_Release(gstate);
+	}
 }
 
 PythonInterface::PythonInterface(std::string modulePath) {
 	PythonInterface::modulePath = modulePath;
+
 	if (!Py_IsInitialized()) {
 		Py_Initialize();
-		PyEval_InitThreads();
 		std::cout << "Python Initialized" << std::endl;
 	}
+
+	PyEval_InitThreads();
+	threadState = PyEval_SaveThread();
 }
 
 PythonInterface::~PythonInterface() {
-	{
-		PythonLock lock = PythonLock();
+	PyEval_RestoreThread(threadState);
 
-		for (std::map<std::string, PyObject*>::iterator ii = pObjectCache.begin(); ii != pObjectCache.end(); ++ii) {
-			Py_DECREF((*ii).second);
-		}
+	for (std::map<std::string, PyObject*>::iterator ii = pObjectCache.begin(); ii != pObjectCache.end(); ++ii) {
+		Py_DECREF((*ii).second);
 	}
 
 	Py_Finalize();

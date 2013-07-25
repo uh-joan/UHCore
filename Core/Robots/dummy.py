@@ -18,15 +18,6 @@ class DummyRobot(robot.Robot):
         if self._states.has_key(componentName):
             return (self._states[componentName], self._states[componentName])
         return ('', None)
-                
-    def setComponentState(self, name, value, blocking=True):
-        if blocking:
-            time.sleep(random.randrange(1, 20, 1) / 2.0)
-            self._states[name] = value
-            return 'SUCCESS'
-        else:
-            self._states[name] = value
-            return 'ACTIVE'
     
     def play(self, fileName, blocking=True):
         self.executeFunction("play", {
@@ -48,6 +39,7 @@ class DummyInterface(object):
         pass
         
     def runFunction(self, funcName, kwargs):
+        print "Dummy is pretending to run function: %s" % funcName
         blocking = True
         if kwargs.has_key('blocking'):
             blocking = bool(kwargs['blocking'])
@@ -61,6 +53,7 @@ class DummyInterface(object):
         return 3
     
     def runComponent(self, name, value, mode=None, blocking=True):
+        print "Dummy is pretending to move %s to %s" % (name, value)
         if(blocking):
             time.sleep(random.randrange(1, 10, 1) / 2.0)
             return 3

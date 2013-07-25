@@ -2,7 +2,6 @@ import math, sys
 import robot
 import rosHelper
 from config import robot_config
-from exceptions import StopIteration
 from collections import deque
 
 class CareOBot(robot.ROSRobot):

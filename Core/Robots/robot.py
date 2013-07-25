@@ -118,7 +118,10 @@ class Robot(object):
         self._robInt.runComponent('light', colour)
 
     def setComponentState(self, name, value, blocking=True):
-        if robot_config[self.name].has_key(name) and robot_config[self.name][name].has_key('positions') and robot_config[self.name][name]['positions'].has_key(value):
+        if robot_config.has_key(self.name) and \
+           robot_config[self.name].has_key(name) and \
+           robot_config[self.name][name].has_key('positions') and \
+           robot_config[self.name][name]['positions'].has_key(value):
             value = robot_config[self.name][name]['positions'][value]
             
         if name == "base" and value == "userLocation":
@@ -190,7 +193,7 @@ class Robot(object):
                 diff = dist
                         
         if diff <= tolerance:
-            if robot_config[self.name].has_key(componentName) and robot_config[self.name][componentName].has_key('positions'):
+            if robot_config.has_key(self.name) and robot_config[self.name].has_key(componentName) and robot_config[self.name][componentName].has_key('positions'):
                 positions = robot_config[self.name][componentName]['positions']
                 for key, value in positions.items():
                     if value == name:
@@ -237,7 +240,7 @@ class ROSRobot(Robot):
         return self._rs
     
     def getImage(self, retFormat='PNG'):
-        if not robot_config[self.name]['head'].has_key('camera'):
+        if not robot_config.has_key(self.name) or not robot_config[self.name]['head'].has_key('camera'):
             return None
         
         img_msg = self._ros.getSingleMessage(self._imageTopic)
