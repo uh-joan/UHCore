@@ -18,7 +18,7 @@ PyObject* Robot::getDefaultClassInstance() {
 			std::cerr << "Error locating class object Robots.robotFactory.Factory" << std::endl;
 		} else {
 			if (Robot::name != "") {
-				std::cout << "Getting class for robot" << name << std::endl;
+				std::cout << "Getting class for robot: " << name << std::endl;
 				pInstance = callMethod(pClass, "getRobot", Robot::name.c_str());
 			} else {
 				std::cout << "Getting class for active robot" << std::endl;
@@ -27,12 +27,20 @@ PyObject* Robot::getDefaultClassInstance() {
 
 			{
 				PythonLock lock = PythonLock();
+				const char* pName = strdup("name");
+				PyObject* nm = PyObject_GetAttrString(getDefaultClassInstance(), pName);
+				Robot::name = std::string(PyString_AsString(nm));
+				Py_XDECREF(nm);
 				Py_DECREF(pClass);
 			}
 		}
 	}
 
 	return pInstance;
+}
+
+std::string Robot::getName() {
+	return Robot::name;
 }
 
 void Robot::setLight(int color[]) {

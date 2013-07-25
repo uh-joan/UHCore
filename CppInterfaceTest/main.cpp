@@ -1,6 +1,7 @@
 #include "robot.h"
 #include <iostream>
 #include <sstream>
+#include <time.h>
 #include <boost/thread.hpp>
 
 using namespace std;
@@ -49,8 +50,8 @@ void testRobotFuncs() {
 	//	result = rob->setComponentState("base", newPos, true);
 	//	cout << "Rotate 90 degrees: " << result << endl;
 
-	result = rob->setComponentState("base", "userLocation", true);
-	cout << "Robot to user: " << result << endl;
+	//result = rob->setComponentState("base", "userLocation", true);
+	//cout << "Robot to user: " << result << endl;
 
 	result = rob->setComponentState("tray", "raised", true);
 	cout << "Set tray to 'raised', result: " << result << endl;
@@ -74,35 +75,54 @@ void testRobotFuncs() {
 
 }
 
-void threadChainer() {
-	boost::thread threads[10];
-	for (int i = 0; i < 10; i++) {
-		threads[i] = boost::thread(testRobotFuncs);
+boost::thread threads[10][10];
+bool done = false;
+
+void threadTerminator() {
+	std::srand(time(NULL));
+	boost::posix_time::time_duration noTime(0, 0, 0, 0);
+	while (!done) {
+		int x = std::rand() % 9 + 1;
+		int y = std::rand() % 10;
+		if (!threads[x][y].timed_join(noTime)) {
+			std::cerr << "Killing thread x:" << x << " y:" << y << std::endl;
+			threads[x][y].interrupt();
+			sleep(rand() % 3);
+		}
+	}
+}
+
+void threadChainer(int x) {
+	for (int i = 1; i < 9; i++) {
+		threads[x][i] = boost::thread(testRobotFuncs);
 	}
 
-	for (int i = 0; i < 10; i++) {
-		threads[i].join();
+	for (int i = 1; i < 9; i++) {
+		threads[x][i].join();
 	}
 }
 
 int main(int argc, char *argv[]) {
-
-	string modulePath = "/home/nathan/git/UHCore/Core";
-	rob = new Robot(modulePath, "Dummy Test robot"); //use the current robot specified in the sessioncontrol table
+	string modulePath = "/home/nathan/git/accompany/UHCore/Core";
+	rob = new Robot(modulePath); //use the current robot specified in the sessioncontrol table
+	cout << "Got interface for: " << rob->getName() << endl;
 
 //	ActionHistory *hist = new ActionHistory(modulePath);
 //	string ruleName = "testPythonInterface";
 //	cout << hist->addHistory(ruleName) << '\n';
 //	hist->addHistoryAsync(ruleName);
 
-	boost::thread threads[10];
-	for (int i = 0; i < 10; i++) {
-		threads[i] = boost::thread(threadChainer);
-	}
-
-	for (int i = 0; i < 10; i++) {
-		threads[i].join();
-	}
+//	for (int i = 0; i < 10; i++) {
+//		threads[i][0] = boost::thread(threadChainer, i);
+//	}
+//
+//	boost::thread arnold(threadTerminator);
+//
+//	for (int i = 0; i < 10; i++) {
+//		threads[i][0].join();
+//	}
+//
+//	arnold.interrupt();
 
 	cout << "Done" << endl;
 

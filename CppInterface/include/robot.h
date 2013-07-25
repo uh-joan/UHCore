@@ -37,6 +37,9 @@ public:
 		std::vector<double> goals;
 	};
 
+	// Returns the name of the current robot
+	std::string getName();
+
 	// modulePath is the URI to the UHCore module
 	// create an interface to the specified robot
 	// if robotName not specified, create an interface to the current active robot

@@ -6,11 +6,11 @@ path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../')
 sys.path.append(path)
 
 import math
-import Robots.rosHelper
 
 class ProxemicMover(object):
     def __init__(self, robot):
         self._robot = robot
+        import Robots.rosHelper
         Robots.rosHelper.ROS.configureROS(packageName='accompany_proxemics')
         import rospy
         import tf
@@ -43,7 +43,8 @@ class ProxemicMover(object):
             pose.position.y = y
             pose.position.z = 0
             
-            response = getProxemicLocation(userId=userId, userPosture=posture, userPose=pose, robotGenericTaskId=taskId)
+            response = getProxemicLocation(userId=userId,
+                                            userPosture=posture, userPose=pose, robotGenericTaskId=taskId)
             
             if len(response.targetPoses) == 0:
                 self._rospy.loginfo("No valid target pose was found.")
