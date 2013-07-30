@@ -76,6 +76,15 @@ void Robot::setLight(std::string color) {
 	}
 }
 
+void Robot::stop(std::string componentName) {
+	PyObject *pValue = callMethod("stop", componentName);
+
+	{
+		PythonLock lock = PythonLock();
+		Py_XDECREF(pValue);
+	}
+}
+
 Robot::Location Robot::getLocation() {
 
 	Robot::Location l;

@@ -7,16 +7,16 @@ class DummyRobot(robot.Robot):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name):
-        super(DummyRobot, self).__init__(name, DummyInterface, '', '')
-        self._states = {}
+        super(DummyRobot, self).__init__(name, DummyInterface)
+        robot._states = {}
                
     def getCameraAngle(self):
         time.sleep(random.randrange(0, 10, 1) / 10.0)
         return 0
 
     def getComponentState(self, componentName, dontResolveName=False):
-        if self._states.has_key(componentName):
-            return (self._states[componentName], self._states[componentName])
+        if robot._states.has_key(componentName):
+            return (robot._states[componentName], robot._states[componentName])
         return ('', None)
     
     def play(self, fileName, blocking=True):
@@ -37,6 +37,9 @@ class DummyInterface(object):
     
     def __init__(self):
         pass
+    
+    def stopComponent(self, name):
+        return 3
         
     def runFunction(self, funcName, kwargs):
         print "Dummy is pretending to run function: %s" % funcName

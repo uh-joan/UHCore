@@ -81,6 +81,9 @@ public:
 
 	// block for the specified time
 	void sleep(int milliseconds);
+
+	// Stops the named component, or all if empty name
+	void stop(std::string componentName="");
 protected:
 	std::vector<double> parseDoubleArray(PyObject* array);
 	std::vector<std::string> parseStringArray(PyObject* array);

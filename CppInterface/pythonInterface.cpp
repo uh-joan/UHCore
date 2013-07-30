@@ -4,6 +4,7 @@
 #include <iostream>
 #include <exception>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 
 PythonLock::PythonLock() {
@@ -19,7 +20,12 @@ PythonLock::~PythonLock() {
 }
 
 PythonInterface::PythonInterface(std::string modulePath) {
-	PythonInterface::modulePath = modulePath;
+	if(!modulePath.empty()){
+		char* fullPath = realpath(modulePath.c_str(), NULL);
+		PythonInterface::modulePath = std::string(fullPath);
+	} else {
+		PythonInterface::modulePath = modulePath;
+	}
 
 	if (!Py_IsInitialized()) {
 		Py_Initialize();

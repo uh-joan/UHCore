@@ -76,7 +76,7 @@ class PoseUpdater(PollingProcessor):
 class Robot(object):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
-    def __init__(self, name, robotInterface, serverTopic, imageTopic):
+    def __init__(self, name, robotInterface):
         self._name = name
         self._robIntClass = robotInterface
         self._robIntInstance = None
@@ -98,6 +98,13 @@ class Robot(object):
             
     def getImage(self, retFormat='PNG'):
         return None
+    
+    def stop(self, name=None):
+        if name==None or name == "":
+            for component in self.getComponents():
+                self._robInt.stopComponent(component)
+        else:
+            self._robInt.stopComponent(component)
     
     def play(self, fileName, blocking=True):
         print "Play: %s" % fileName 
@@ -123,30 +130,15 @@ class Robot(object):
            robot_config[self.name][name].has_key('positions') and \
            robot_config[self.name][name]['positions'].has_key(value):
             value = robot_config[self.name][name]['positions'][value]
-            
+
         if name == "base" and value == "userLocation":
             user = Users().getActiveUser()
             if user['xCoord'] != None and user['yCoord'] != None and user['orientation'] != None:
-                try:
-                    p = ProxemicMover(self)
-                    if p.gotoTarget(user['userId'], user['poseId'], user['xCoord'], user['yCoord'], user['orientation']):
-                        return self._ros._states[3]
-                    else:
-                        pass
-                        #return self._ros._states[4]
-                except Exception as e:
-                    print >> sys.stderr, "Exception occured while calling proxemics: %s" % e
-                
                 value = [user['xCoord'], user['yCoord'], math.radians(user['orientation'])]
-                print >> sys.stderr, "Proxemics failed, proceeding directly to location (%s, %s, %s)" % (
-                                                                                                            user['xCoord'], 
-                                                                                                            user['yCoord'], 
-                                                                                                            user['orientation'])
-            else:
-                print >> sys.stderr, "Could not go to user location, missing information.  X:%s, Y:%s, T:%s" % (
-                                                                                                            user['xCoord'], 
-                                                                                                            user['yCoord'], 
-                                                                                                            user['orientation'])
+                print "Going to userLocation location (%s, %s, %s)" % (
+                                                                        user['xCoord'], 
+                                                                        user['yCoord'], 
+                                                                        user['orientation'])
 
         status = self._robInt.runComponent(name, value, None, blocking)
         return _states[status]
@@ -168,7 +160,7 @@ class Robot(object):
         curPos = state['positions']
 
         positions = self.getComponentPositions(componentName)
-
+        
         if len(positions) == 0:
             return ('', state)
 
@@ -296,16 +288,41 @@ class ROSRobot(Robot):
             return Data.dataAccess.Locations.resolveLocation(pos)
 
     def setComponentState(self, name, value, blocking=True):
+                    
+        if name == "base" and value == "userLocation":
+            user = Users().getActiveUser()
+            if user['xCoord'] != None and user['yCoord'] != None and user['orientation'] != None:
+                try:
+                    p = ProxemicMover(self)
+                    if p.gotoTarget(user['userId'], user['poseId'], user['xCoord'], user['yCoord'], user['orientation']):
+                        return _states[3]
+                    else:
+                        pass
+                        #return _states[4]
+                except Exception as e:
+                    print >> sys.stderr, "Exception occurred while calling proxemics: %s" % e
+                
+                value = [user['xCoord'], user['yCoord'], math.radians(user['orientation'])]
+                print >> sys.stderr, "Proxemics failed, proceeding directly to location (%s, %s, %s)" % (
+                                                                                                            user['xCoord'], 
+                                                                                                            user['yCoord'], 
+                                                                                                            user['orientation'])
+            else:
+                print >> sys.stderr, "Could not go to user location, missing information.  X:%s, Y:%s, T:%s" % (
+                                                                                                            user['xCoord'], 
+                                                                                                            user['yCoord'], 
+                                                                                                            user['orientation'])
+        
         status = super(ROSRobot, self).setComponentState(name, value, blocking)
         # There is a bug in the Gazebo COB interface that prevents proper trajectory tracking
         # this causes most status messages to come back as aborted while the operation is still
         # commencing, time delay to attempt to compensate...
-        if status != 3 and len(self._ros.getTopics('/gazebo')) > 0:
+        if status != _states[3] and len(self._ros.getTopics('/gazebo')) > 0:
             time.sleep(1)
-            print >> sys.stderr, 'Gazebo hack: state ' + self._rs._states[status] + ' changed to state ' + self._rs._states[3]
-            return _states[3]
+            print >> sys.stderr, 'Gazebo hack: state ' + status + ' changed to state ' + _states[3]
+            status = _states[3]
         
-        return _states[status]
+        return status
     
     def getComponentPositions(self, componentName):
         return self._ros.getParam('%s/%s' % (self._serverTopic, componentName))

@@ -1,4 +1,5 @@
 import math, sys
+import time
 import robot
 import rosHelper
 from config import robot_config
@@ -61,7 +62,7 @@ class CareOBot(robot.ROSRobot):
             client = UnloadTrayClient()
         except Exception as e:
             print >> sys.stderr, "Unable to initialise UnloadTrayClient. Error: %s" % repr(e)
-            return self._ros._states[4]
+            return robot._states[4]
         
         return client.unloadTray(h, blocking)
         
@@ -84,9 +85,9 @@ class UnloadTrayClient(object):
         goal.table_height = height
         
         if blocking:
-            return self._ros._states[self._client.send_goal_and_wait(goal)]
+            return robot._states[self._client.send_goal_and_wait(goal)]
         else:
-            return self._ros._states[self._client.send_goal(goal)]
+            return robot._states[self._client.send_goal(goal)]
     
 class ScriptServer(object):
 
@@ -104,7 +105,9 @@ class ScriptServer(object):
             raise Exception('Unknown function: %s' % (funcName))
         
         return func(**kwargs)
-        
+    
+    def stopComponent(self, name):
+        return self._ss.stop(name)
     
     def initComponent(self, name):
         return self._ss.initROS(name, True).get_state()
@@ -130,52 +133,46 @@ class ActionLib(object):
         self._ssMsgs = cob_script_server.msg
         
         self._ros.initROS()
+        self._doneState = actionlib.SimpleGoalState.DONE
         self._client = actionlib.SimpleActionClient('/script_server', self._ssMsgs.ScriptAction)
         print "Waiting for script_server"
         self._client.wait_for_server()
         print "Connected to script_server"
         
     def runFunction(self, funcName, kwargs):
-        name = None
-        value = None
-        mode = None
-        blocking = True
-        service_name = None
-        duration = None
-        
-        if kwargs.has_key('component_name'):
-            name = str(kwargs['component_name']).encode('ascii', 'ignore')
-            
-        if kwargs.has_key('parameter_name'):
-            value = str(kwargs['parameter_name']).encode('ascii', 'ignore')
-                        
-        if kwargs.has_key('mode'):
-            mode = str(kwargs['mode']).encode('ascii', 'ignore')
-            
-        if kwargs.has_key('blocking'):
-            blocking = bool(kwargs['blocking'])
-            
-        if kwargs.has_key('service_name'):
-            service_name = str(kwargs['service_name']).encode('ascii', 'ignore')
-            
+        func = str(funcName).encode('ascii', 'ignore')
+        name = str(kwargs.get('component_name', None)).encode('ascii', 'ignore')
+        value = str(kwargs.get('parameter_name', None)).encode('ascii', 'ignore')
+        mode = str(kwargs.get('mode', None)).encode('ascii', 'ignore')
+        blocking = bool(kwargs.get('blocking', True))
+        service_name = str(kwargs.get('service_name', None)).encode('ascii', 'ignore')
         if kwargs.has_key('duration'):
-            duration = float(kwargs['duration'])
+            duration = float(kwargs.get('duration'))
+        else:
+            duration = None
 
         goal = self._ssMsgs.ScriptGoal(
-                          function_name=str(funcName).encode('ascii', 'ignore'),
-                          component_name=name,
-                          parameter_name=value,
-                          mode=mode,
-                          # blocking=blocking,
-                          service_name=service_name,
-                          duration=duration
-                          )
+                                          function_name=func,
+                                          component_name=name,
+                                          parameter_name=value,
+                                          mode=mode,
+                                          service_name=service_name,
+                                          duration=duration
+                                      )
         
         if blocking:
-            return self._client.send_goal_and_wait(goal)
+            self._client.send_goal(goal)
+            while self._client.simple_state != self._doneState:
+                time.sleep(0.01)
+            
+            return self._client.get_state()
         else:
-            return self._client.send_goal(goal)
+            self._client.send_goal(goal)
+            return 1
         
+    def stopComponent(self, name):
+        return self.runFunction("stop", {'component_name':name, 'blocking':False})
+    
     def initComponent(self, name):
         if name not in ActionLib._specialCases.keys():
             func = 'init'
@@ -191,22 +188,14 @@ class ActionLib(object):
         else:
             func = ActionLib._specialCases[name]['function']
             mode = ActionLib._specialCases[name]['mode']
-
-        goal = self._ssMsgs.ScriptGoal(
-                          function_name=str(func).encode('ascii', 'ignore'),
-                          component_name=str(name).encode('ascii', 'ignore'),
-                          parameter_name=str(value).encode('ascii', 'ignore'),
-                          mode=str(mode).encode('ascii', 'ignore'),
-                          # blocking=bool(blocking)
-                          )
-        
-        if(blocking):
-            status = self._client.send_goal_and_wait(goal)
-        else:
-            self._client.send_goal(goal)
-            status = 1
             
-        return status
+        return self.runFunction(func, 
+                                {
+                                   'component_name':name, 
+                                   'parameter_name':value, 
+                                   'mode':mode, 
+                                   'blocking': blocking
+                                })
 
 class PoseUpdater(robot.PoseUpdater):
     def __init__(self, robot):
@@ -215,6 +204,14 @@ class PoseUpdater(robot.PoseUpdater):
         self._rangeThreshold = robot_config[robot.name]['tray']['size'] / 100.0
         self._rangeWindow = robot_config[robot.name]['phidgets']['windowSize']
         self._rangeHistory = {}
+        self._rs
+        
+    @property
+    def _ros(self):
+        if self._rs == None:
+            # Wait to configure/initROS ROS till it's actually needed
+            self._rs = rosHelper.ROS()
+        return self._rs
     
     def checkUpdatePose(self, robot):
         states = {}
