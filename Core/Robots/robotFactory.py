@@ -1,5 +1,6 @@
 from Data.dataAccess import Robots, Locations
 import sys
+from config import robot_config
 
 class Factory(object):
 
@@ -28,12 +29,20 @@ class Factory(object):
         robot = None
         if robotName.lower().startswith('care-o-bot'):
             import careobot
-            cobVersion = robotName[11:].replace('.', '-')
-            rosMaster = "http://cob%s-pc1:11311" % cobVersion
+            if robot_config.has_key(robotName) and robot_config[robotName].has_key('hostname'):
+                rosMaster = 'http://%s:11311'
+            else:
+                cobVersion = robotName[11:].replace('.', '-')
+                rosMaster = "http://cob%s-pc1:11311" % cobVersion
             robot = careobot.CareOBot(robotName, rosMaster)
         elif robotName.lower().startswith('sunflower'):
             import sunflower
-            robot = sunflower.Sunflower(robotName)
+            if robot_config.has_key(robotName) and robot_config[robotName].has_key('hostname'):
+                rosMaster = 'http://%s:11311'
+            else:
+                cobVersion = robotName[10:].replace('.', '-')
+                rosMaster = "http://sunflower%s-pc1:11311" % cobVersion
+            robot = sunflower.Sunflower(robotName, rosMaster)
         elif robotName.lower().startswith('dummy'):
             import dummy
             robot = dummy.DummyRobot(robotName)

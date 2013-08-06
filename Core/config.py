@@ -111,12 +111,29 @@ robot_config = {
                                             },
                                    },
                 'Sunflower 1-1': {
-                                   'tray': { 'positions': { 'raised': 'open', 'lowered': 'closed' }},
-                                   'head': { 'positions': { 'front': 'home', 'back': 'back_right' }},
+                                   'hostname': 'sf1-1-pc1',
+                                   'tray': { 
+                                                'positions': { 
+                                                              'raised': 'open', 'lowered': 'closed' 
+                                                              }
+                                            },
+                                   'head': { 
+                                                'positions': { 
+                                                              'front': 'home', 'back': 'back_right' 
+                                                              }
+                                            },
                                    },
                 'Sunflower 1-2': {
-                                   'tray': { 'positions': { 'raised': 'open', 'lowered': 'closed' }},
-                                   'head': { 'positions': { 'front': 'home', 'back': 'back_right' }},
+                                   'tray': { 
+                                                'positions': { 
+                                                              'raised': 'open', 'lowered': 'closed' 
+                                                              }
+                                            },
+                                   'head': { 
+                                                'positions': { 
+                                                              'front': 'home', 'back': 'back_right' 
+                                                              }
+                                            },
                                    },
                 }
 

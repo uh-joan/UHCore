@@ -104,7 +104,7 @@ class Robot(object):
             for component in self.getComponents():
                 self._robInt.stopComponent(component)
         else:
-            self._robInt.stopComponent(component)
+            self._robInt.stopComponent(name)
     
     def play(self, fileName, blocking=True):
         print "Play: %s" % fileName 

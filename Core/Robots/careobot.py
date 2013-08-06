@@ -2,6 +2,7 @@ import math, sys
 import time
 import robot
 import rosHelper
+import inspect
 from config import robot_config
 from collections import deque
 
@@ -10,8 +11,8 @@ class CareOBot(robot.ROSRobot):
 
     def __init__(self, name, rosMaster):
         rosHelper.ROS.configureROS(rosMaster=rosMaster)
-        super(CareOBot, self).__init__(name, ActionLib, 'script_server', robot_config[name]['head']['camera']['topic'])
-        # super(CareOBot, self).__init__(name, ScriptServer, 'script_server', '/stereo/right/image_color/compressed')
+        #super(CareOBot, self).__init__(name, ActionLib, 'script_server', robot_config[name]['head']['camera']['topic'])
+        super(CareOBot, self).__init__(name, ScriptServer, 'script_server', robot_config[name]['head']['camera']['topic'])
                
     def getCameraAngle(self):
         state = self.getComponentState('head', True)
@@ -25,7 +26,7 @@ class CareOBot(robot.ROSRobot):
         angle = angle % 360
             
         return angle
-        
+                
     def setComponentState(self, name, value, blocking=True):
         # check if the component has been initialised, and init if it hasn't
         if len(self._ros.getTopics('/%(name)s_controller' % { 'name': name })) == 0:
@@ -90,7 +91,11 @@ class UnloadTrayClient(object):
             return robot._states[self._client.send_goal(goal)]
     
 class ScriptServer(object):
-
+    _specialCases = {
+                    'light': {'function': 'set_light', 'mode': ''},
+                    'sound': {'function': 'say', 'mode': 'FEST_EN' }
+                    }
+    
     def __init__(self):
         self._ros = rosHelper.ROS()
         self._ros.configureROS(packageName='cob_script_server')
@@ -104,21 +109,35 @@ class ScriptServer(object):
         except AttributeError:
             raise Exception('Unknown function: %s' % (funcName))
         
-        return func(**kwargs)
+        #filter kwargs to only args in function
+        argspec = inspect.getargspec(func)
+        args = { argName: kwargs[argName] for argName in argspec.args if argName in kwargs.keys() }
+
+        ah = func(**args)
+        return ah.get_state()
     
     def stopComponent(self, name):
-        return self._ss.stop(name)
+        return self.runFunction("stop", { 'component_name':name })
     
-    def initComponent(self, name):
-        return self._ss.initROS(name, True).get_state()
+    def initComponent(self, name):       
+        if name not in ScriptServer._specialCases.keys():
+            return self.runFunction('init', {'component_name': name} )
+        return 3
     
     def runComponent(self, name, value, mode='', blocking=True):
-        if name == 'light':
-            return self._ss.set_light(value, blocking).get_state()
-        elif name == 'sound':
-            return self._ss.say(value, blocking).get_state()
+        if name not in ScriptServer._specialCases.keys():
+            func = "move"
         else:
-            return self._ss.move(name, value, blocking, mode).get_state()
+            func = ScriptServer._specialCases[name]['function']
+            mode = ScriptServer._specialCases[name]['mode']
+            
+        return self.runFunction(func, 
+                                {
+                                   'component_name':name, 
+                                   'parameter_name':value, 
+                                   'mode':mode, 
+                                   'blocking': blocking
+                                })
 
 class ActionLib(object):
     _specialCases = {
@@ -163,7 +182,7 @@ class ActionLib(object):
         if blocking:
             self._client.send_goal(goal)
             while self._client.simple_state != self._doneState:
-                time.sleep(0.01)
+                time.sleep(0.1)
             
             return self._client.get_state()
         else:
@@ -171,15 +190,11 @@ class ActionLib(object):
             return 1
         
     def stopComponent(self, name):
-        return self.runFunction("stop", {'component_name':name, 'blocking':False})
+        return self.runFunction("stop", { 'component_name':name })
     
     def initComponent(self, name):
         if name not in ActionLib._specialCases.keys():
-            func = 'init'
-            goal = self._ssMsgs.ScriptGoal(
-                              function_name=func.encode('ascii', 'ignore'),
-                              component_name=name.encode('ascii', 'ignore'))
-            return self._client.send_goal_and_wait(goal)
+            return self.runFunction('init', {'component_name': name} )
         return 3
     
     def runComponent(self, name, value, mode=None, blocking=True):

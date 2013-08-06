@@ -4,19 +4,16 @@ from robot import ROSRobot
 class Sunflower(ROSRobot):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
-    def __init__(self, name='Sunflower'):
+    def __init__(self, name, rosMaster):
         from rosHelper import ROS
-        ROS.configureROS(version='electric', rosMaster='http://sf1-1-pc1:11311', overlayPath='/home/nathan/git/sunflower/')
+        ROS.configureROS(rosMaster=rosMaster)
         super(Sunflower, self).__init__(name, ActionLib, 'sf_controller', '')
 
-    def getImage(self, leftRight='right', retFormat='PNG'):
-        pass
-    
     def setComponentState(self, name, value):
         # check if the component has been initialised, and init if it hasn't
         if name == 'base':
             self._robInt.initComponent(name)
-        
+
         return super(Sunflower, self).setComponentState(name, value)
 
 class ActionLib(object):
