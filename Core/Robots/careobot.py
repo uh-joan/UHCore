@@ -117,7 +117,10 @@ class ScriptServer(object):
         return ah.get_state()
     
     def stopComponent(self, name):
-        return self.runFunction("stop", { 'component_name':name })
+        if name in ScriptServer._specialCases:
+            return 3
+
+        return self.runFunction("stop", { 'component_name':name, 'blocking':False })
     
     def initComponent(self, name):       
         if name not in ScriptServer._specialCases.keys():
@@ -190,7 +193,10 @@ class ActionLib(object):
             return 1
         
     def stopComponent(self, name):
-        return self.runFunction("stop", { 'component_name':name })
+        if name in ActionLib._specialCases:
+            return 3
+
+        return self.runFunction("stop", { 'component_name':name, 'blocking':False })
     
     def initComponent(self, name):
         if name not in ActionLib._specialCases.keys():
@@ -219,7 +225,7 @@ class PoseUpdater(robot.PoseUpdater):
         self._rangeThreshold = robot_config[robot.name]['tray']['size'] / 100.0
         self._rangeWindow = robot_config[robot.name]['phidgets']['windowSize']
         self._rangeHistory = {}
-        self._rs
+        self._rs = None
         
     @property
     def _ros(self):
@@ -268,16 +274,29 @@ class PoseUpdater(robot.PoseUpdater):
             trayIsEmpty = 'Full'
         else:
             trayIsEmpty = 'Empty'
+
+        p = []
+        for position in averages:
+            p.append(round(position, 3))
    
-        return (trayIsEmpty, trayIsEmpty)
+        return (p, trayIsEmpty)
 
     def getComponentPosition(self, robot, componentName):
-        (state, _) = robot.getComponentState(componentName)
-        if state == None or state == '':
-            print "No named component state for: %s." % (componentName)
-            state = 'Unknown'
+        (stateName, state) = robot.getComponentState(componentName)
+        if stateName == None or len(state['positions']) == 0:
+            if len(state['positions']) == 0:
+                #Error while retreiving state
+                return (None, None)
+
+        if stateName == '':
+            #print "No named component state for: %s." % (componentName)
+            stateName = 'Unknown'
         
-        return (state, state)
+        p = []
+        for position in state['positions']:
+            p.append(round(position, 3))
+        
+        return (p, stateName)
 
     def getTrayStates(self, robot):
         return {

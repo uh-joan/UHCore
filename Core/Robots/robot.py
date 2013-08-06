@@ -162,7 +162,8 @@ class Robot(object):
         positions = self.getComponentPositions(componentName)
         
         if len(positions) == 0:
-            return ('', state)
+            #print >> sys.stderr, "Unable to retrieve named positions. Name resolution will now abort"
+            return (None, state)
 
         name = None
         diff = None
@@ -173,7 +174,7 @@ class Robot(object):
                 continue
 
             if len(positionValue) != len(curPos):
-                # raise Exception("Arguement lengths don't match")
+                # raise Exception("Argument lengths don't match")
                 continue
             
             dist = 0

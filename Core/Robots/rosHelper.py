@@ -1,5 +1,6 @@
 import time, os, sys
 from subprocess import Popen, PIPE
+from httplib import CannotSendRequest
 
 try:
     from config import ros_config
@@ -24,8 +25,9 @@ class ROS(object):
         self.initROS()
         
     def __del__(self):
-        for sub in self._subscribers.values():
-            sub.unregister()
+        if hasattr(self, '_subscribers'):
+            for sub in self._subscribers.values():
+                sub.unregister()
         
     def initROS(self, name='rosHelper'):
         with _threadLock:
@@ -47,7 +49,7 @@ class ROS(object):
             while not subscriber.hasNewMessage:
                 if timeout != None:
                     if timeout < 0:
-                        break
+                        raise Exception("Timeout while waiting on messages")
                     else:
                         timeout -= 0.01
                 time.sleep(0.01)                
@@ -59,14 +61,19 @@ class ROS(object):
             else:
                 return None
     
-    def getParam(self, paramName):
-        try:
-            ROS.configureROS(packageName='rospy')
-            import rospy
-            return rospy.get_param(paramName)
-        except Exception as e:
-            print >> sys.stderr, "Unable to connect to ros parameter server, Error: %s" % e
-            return []
+    def getParam(self, paramName, retry=5):
+        with _threadLock:
+            try:
+                return self._rospy.get_param(paramName)
+            except CannotSendRequest:
+                if retry > 0:
+                    return self.getParam(paramName, retry - 1)
+                else:
+                    print >> sys.stderr, "Unable to connect to ros parameter server, Timeout sending request"
+                    return []                                        
+            except Exception as e:
+                print >> sys.stderr, "Unable to connect to ros parameter server, Error: %s" % repr(e)
+                return []
     
     def getTopics(self, baseFilter='', exactMatch=False, retry=10):
         # topics = self._rospy.get_published_topics(baseFilter)
@@ -85,7 +92,8 @@ class ROS(object):
             try:
                 allTopics = self._rospy.get_published_topics()
             except Exception as e:
-                print "Error while retrieving topics, will retry %s more times. Error: %s" % (retry, e)
+                if type(e) != CannotSendRequest:
+                    print >> sys.stderr, "Error while retrieving topics, will retry %s more times. Error: %s" % (retry, repr(e))
                 if(retry > 0):
                     return self.getTopics(baseFilter, exactMatch, retry - 1)
                 else:
@@ -264,15 +272,21 @@ class ROS(object):
             sys.path.append(path)
 
         if packageName != None:
-            import roslib
-            roslib.load_manifest(packageName)
+            with _threadLock:
+                import roslib
+                try:
+                    roslib.load_manifest(packageName)
+                except Exception as e:
+                    print >> sys.stderr, "Error loading package: %s" % packageName
+                    print >> sys.stderr, repr(e)
 
 class RosSubscriber(object):
     
     def __init__(self, topic, dataType, idleTime=15):
-        ROS.configureROS(packageName='rospy')
-        import rospy
-        self._rospy = rospy
+        with _threadLock:
+            ROS.configureROS(packageName='rospy')
+            import rospy
+            self._rospy = rospy
         self._lastAccess = time.time()
         self._subscriber = None
         self._topic = topic
@@ -310,15 +324,18 @@ class RosSubscriber(object):
 
 class Transform(object):
     def __init__(self, rosHelper=None, fromTopic=None, toTopic=None):
-        if(rosHelper == None):
-            self._ros = ROS()
-        else:
-            self._ros = rosHelper
-        self._ros.configureROS(packageName='core_transform')
-        import tf, rospy
-        self._rospy = rospy
-        self._tf = tf
-        self._ros.initROS()
+        with _threadLock:
+            if(rosHelper == None):
+                self._ros = ROS()
+            else:
+                self._ros = rosHelper
+            self._ros.configureROS(packageName='core_transform')
+            import tf
+            import rospy
+            self._rospy = rospy
+            self._tf = tf
+            self._ros.initROS()
+
         self._listener = None
         self._defaultFrom = fromTopic
         self._defaultTo = toTopic
