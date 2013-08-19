@@ -8,10 +8,12 @@ sys.path.append(path)
 import math
 
 class ProxemicMover(object):
+    """Python wrapper/interface for User Proxemics Service """    
     def __init__(self, robot):
         self._robot = robot
         import Robots.rosHelper
         Robots.rosHelper.ROS.configureROS(packageName='accompany_proxemics')
+        Robots.rosHelper.ROS.initROS(self)
         import rospy
         import tf
         import accompany_context_aware_planner.srv
@@ -21,7 +23,11 @@ class ProxemicMover(object):
         self._rospy = rospy
         self._tf = tf
     
-    def gotoTarget(self, userId, posture, x, y, theta, taskId = 1):
+    def gotoTarget(self, userId, posture, x, y, theta, taskId = 3):
+        """
+            Uses proxemics to attempt to locate a valid location to send the robot near the specified location.
+            Raises exception on error
+        """
         if self._robot == None:
             raise Exception("no robot specified")
         
@@ -38,7 +44,7 @@ class ProxemicMover(object):
                                                        self._srvMsg)
         try:
             pose = self._geoMsg()
-            pose.orientation.w = self._tf.transformations.quaternion_from_euler(0,0,math.radians(0))[3]
+            pose.orientation.w = self._tf.transformations.quaternion_from_euler(0,0,math.radians(theta))[3]
             pose.position.x = x
             pose.position.y = y
             pose.position.z = 0
@@ -68,8 +74,8 @@ class ProxemicMover(object):
                                                                                 target.pose.position.y,
                                                                                 target.pose.position.z,
                                                                                 math.degrees(yaw)))
-                    
-                    if self._robot.setComponentState('base', [x, y, yaw]) == 3:
+                    location = [target.pose.position.x, target.pose.position.y, yaw]
+                    if self._robot.setComponentState('base', location) == 3:
                         return True
 
         except self._rospy.ServiceException, e:

@@ -2,7 +2,7 @@ import sys
 import dataAccess
 
 class StateResolver(object):
-
+    """ Used to resolve the on/off state for a given sensor"""
     def __init__(self):
         self._dao = dataAccess.Sensors()
         self._movingAverageCache = {}
@@ -11,6 +11,7 @@ class StateResolver(object):
         self._warned = {}
     
     def isSensorOn(self, sensor):
+        """ Evaluate a sensors rules into a boolean value """
         rule = sensor['sensorRule']
         value = sensor['value']
         if rule == 'Moving Average':
@@ -30,9 +31,11 @@ class StateResolver(object):
             return None
         
     def evaluateLevel(self, value):
+        """ Simple evaluation for level sensors """
         return value > 1
         
     def evaluateBoolean(self, sensorType, value):
+        """ Evaluation for boolean sensor types (REED, PRESSUREMAP, SWITCH) """
         if sensorType == 'CONTACT_REED':
             return float(value) == 1
         elif sensorType == 'CONTACT_PRESSUREMAT':
@@ -49,6 +52,7 @@ class StateResolver(object):
                 return True
     
     def evaluateRule(self, rule, value):
+        """ Evaluation for rule based sensors (Currently use only for POWERLINE sensors) """
             try:
                 # Rules are in Java notation
                 pyRule = rule.replace('&&', 'and').replace('||', 'or')
@@ -60,6 +64,7 @@ class StateResolver(object):
                 return None
     
     def resolveStates(self, sensorList):
+        """ Resolve the states of all sensors in the given list """
         """returns [{'id': sensor['sensorId'], 'value': sensor['value'], 'state':'Open/Closed/sensor['value']', 'on':True/False/None, 'xCoord': sensor['xCoord'], 'yCoord': sensor['yCoord'], 'orientation': sensor['orientation']}]"""
         states = []
                 
@@ -80,12 +85,14 @@ class StateResolver(object):
         return states
         
     def _getType(self, typeName):
+        """ Returns the type data for the given sensor """
         if not self._sensorTypeCache.has_key(typeName):
             self._sensorTypeCache[typeName] = self._dao.getSensorTypeByName(typeName)
         
         return self._sensorTypeCache[typeName]
     
     def getDisplayState(self, sensor):
+        """ Gets the display value for the given sensor, given it's current state """
         stypename = sensor['sensorTypeName']
         stype = self._getType(stypename)
         
@@ -100,6 +107,8 @@ class StateResolver(object):
         return state.capitalize()        
 
     def temperatureStatus(self, sensor):
+        """ Moving average-ish evaluation for temperature sensors """
+        """ Temperature must change greater than 10% within the window for the sensor to be regarded as 'active' """
         if not self._movingAverageCache.has_key(sensor['sensorId']):
             self._movingAverageCache[sensor['sensorId']] = { 'values':[], 'status': False }
             
@@ -134,6 +143,7 @@ class StateResolver(object):
             return 'Off'
 
     def _importMetaData(self):
+        """ No longer used, merged data from the old sensors xml file into the database """
         from dataAccess import DataAccess
         dao = DataAccess()
         from xml.etree import ElementTree as et
@@ -155,6 +165,7 @@ class StateResolver(object):
             dao.saveData(sql, args)
 
     def _alterMetaData(self):
+        """ No longer used, converted SVG coords into RH coords """
         from xml.etree import ElementTree as et
         from SensorMap.processor import CoordinateConvertor
         import os, math

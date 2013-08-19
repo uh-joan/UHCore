@@ -23,6 +23,9 @@ _states = {
         9: 'LOST'}
 
 class PoseUpdater(PollingProcessor):
+    """Abstract processor used to update the sensors table for sensors (real and meta) located on the robot"""
+    """checkUpdatePose() must be implemented by the inheriting class""" 
+    
     def __init__(self, robot):
         super(PoseUpdater, self).__init__()
         self._robot = robot
@@ -39,6 +42,8 @@ class PoseUpdater(PollingProcessor):
         self._removePollingProcessor('pose ' + self._robot.name)
     
     def updateStates(self, states):
+        """ Iterates the states list and adds the values to the _channels dict in the standard format """
+        """ See PollingProcessor for _channels details """
         for key, value in states.items():
             if value != None and value[1] != None:
                 try:
@@ -74,6 +79,9 @@ class PoseUpdater(PollingProcessor):
         pass
 
 class Robot(object):
+    """Abstract base class for all robots implemented in this module"""
+    """Contains code that has thus far proven generic to all used robots"""
+     
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name, robotInterface):
@@ -83,6 +91,7 @@ class Robot(object):
         
     @property
     def _robInt(self):
+        """Concrete implementation of the robot interface"""
         if self._robIntInstance == None:
             self._robIntInstance = self._robIntClass()
             
@@ -91,15 +100,13 @@ class Robot(object):
     @property
     def name(self):
         return self._name
-    
-    @property
-    def _transform(self):
-        return None
-            
+                
     def getImage(self, retFormat='PNG'):
+        """ Abstract, should be implemented by robots supporting image processing""" 
         return None
     
     def stop(self, name=None):
+        """ Attempt to stop the named component, or all components if no name supplied, blocks until complete"""
         if name==None or name == "":
             for component in self.getComponents():
                 self._robInt.stopComponent(component)
@@ -107,24 +114,45 @@ class Robot(object):
             self._robInt.stopComponent(name)
     
     def play(self, fileName, blocking=True):
+        """ Abstract, Play a specified file. File should be assumed to be accessable to the robot. """ 
         print "Play: %s" % fileName 
     
     def say(self, text, languageCode="en-gb", blocking=True):
+        """ Abstract, Use the TTS engine to say the specified text, using the specified language code. """
+        """ Language code should be assumed to be in iso 639-1 format, with option region tag, defaults to UK English """
         print "Say (%s): %s" % (languageCode, text)
         
     def sleep(self, milliseconds):
+        """ Pause execution for specified time(in milliseconds) """
         time.sleep(milliseconds / 1000.0)
 
     def executeFunction(self, funcName, kwargs):
+        """ Attempt to run an arbitrary function on the robot interface """
         return self._robInt.runFunction(funcName, kwargs)
     
     def getLocation(self, dontResolveName=False):
+        """ Abstract, Returns a tuple containing ('LocName or Empty', (X, Y, Theta))"""
         return ('', (None, None, None))
 
     def setLight(self, colour):
+        """ Set the light to the named colour or [R,G,B] """
         self._robInt.runComponent('light', colour)
 
     def setComponentState(self, name, value, blocking=True):
+        """
+            Set the named component to the given value
+            value can be a string for a named position, or an array of floats for specific joint values
+                The length of the array must match the length of the named joints for the component
+                If a named position is defined in the robot config, the config value will be substituted 
+                 before sending.  This allows for a generic top level command to work on multiple robots.
+                 I.E. 'Tray' to 'Raised' will change to 'Up', 'Open', 'DeliverUp' depending on the model
+                 of robot (COB3.2, Sunflower, COB3.5, in this example)
+            if name is base and value is userLocation, this will cause the robot to go to the current
+                user location.  
+            set blocking to true(default) for this function to block until completed
+            if blocking is set to false, this function will return immediately with value 'ACTIVE'
+        """
+        
         if robot_config.has_key(self.name) and \
            robot_config[self.name].has_key(name) and \
            robot_config[self.name][name].has_key('positions') and \
@@ -144,16 +172,29 @@ class Robot(object):
         return _states[status]
     
     def getComponentPositions(self, componentName):
+        """ Abstract, Returns a dictionary that contains all available named positions and their """
+        """     associated value arrays {'PositionName', [values, ...]} """
         return {}
 
     def getComponents(self):
+        """ Abstract, Returns a list of all available components """
         return []
         
     def getComponentState(self, componentName, dontResolveName=False):
+        """ Abstract, return the a tuple containing the state (named and raw) of the named component.  """
+        """ Name resolution can be skipped by setting dontResolveName=True. """
+        """ ('Name or Empty', {'name': '...', 'positions': [..., ...], 'goals': [..., ...], 'joints': [..., ...] })"""
         ret = {'name': '', 'positions': [], 'goals': [], 'joints': [] }
         return ('', ret)
         
     def resolveComponentState(self, componentName, state, tolerance=0.5):
+        """ Attempt to resolve a given state to it's closes named position, given the stated tolerance value"""
+        """ This method was initally written for locations, and can struggle with higher dimensional values, """
+        """     I.E, a named arm position.  There are also problems around '0'.  This method will likely need to """
+        """     eventually be replaced with something more robust. """
+        """ If the named position exists in the robot_config, the config key will be substituted before returning """
+        """  This is the reverse of what happens in setComponentState, using the same example, ('Up', 'Open', 'DeliverUp') """
+        """  will all be changed to 'Raised' before returning """
         if state == None:
             return (None, None)
         
@@ -205,9 +246,12 @@ class Robot(object):
 
 
 class ROSRobot(Robot):
+    """ Abastract base class for robots that are based on the ROS architecture """
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name, robotInterface, serverTopic, imageTopic):
+        """ Assumes a service structure similar to that of the IPA Care-O-Bot """
+        """ Robots known to work are the IPA Care-O-Bot (3.2,3.5,3.6) and the UH Sunflower (1.1, 1.2) """
         super(ROSRobot, self).__init__(name, robotInterface)
         self._rs = None
         self._tf = None
@@ -216,6 +260,7 @@ class ROSRobot(Robot):
     
     @property
     def _transform(self):
+        """ Transform between the robot base frame and the map frame, used in getLocation() """
         if self._tf == None:
             try:
                 import rosHelper
@@ -226,13 +271,16 @@ class ROSRobot(Robot):
         
     @property
     def _ros(self):
+        """ ROS Interface, current options are rosHelper(stable) and rosMulti(incomplete) """
+        # Wait to configure/initROS ROS till it's actually needed
         if self._rs == None:
             import rosHelper
-            # Wait to configure/initROS ROS till it's actually needed
             self._rs = rosHelper.ROS()
         return self._rs
     
     def getImage(self, retFormat='PNG'):
+        """ Returns the image from the robots camera (topic specified in robot_config) or None if no camera """
+        """ While retFormat is taken into account, PIL appers to always return a JPG file, issue has not been investigated """
         if not robot_config.has_key(self.name) or not robot_config[self.name]['head'].has_key('camera'):
             return None
         
@@ -272,6 +320,7 @@ class ROSRobot(Robot):
         return imgBytes.getvalue()
     
     def getLocation(self, dontResolveName=False):
+        """ Returns a tuple containing ('LocName or Empty', (X, Y, Theta))"""
         tf = self._transform
         if tf == None:
             return ('', (None, None, None))
@@ -289,7 +338,15 @@ class ROSRobot(Robot):
             return Data.dataAccess.Locations.resolveLocation(pos)
 
     def setComponentState(self, name, value, blocking=True):
-                    
+        """
+            Set the named component to the given value
+            value can be a string for a named position, or an array of floats for specific joint values
+                The length of the array must match the length of the named joints for the component
+            if name is base and value is userLocation, this will cause the proxemics module to be called
+                to send the robot near the users current location
+            set blocking to true(default) for this function to block until completed
+            if blocking is set to false, this function will return immediately with value 'ACTIVE'
+        """
         if name == "base" and value == "userLocation":
             user = Users().getActiveUser()
             if user['xCoord'] != None and user['yCoord'] != None and user['orientation'] != None:
@@ -324,14 +381,20 @@ class ROSRobot(Robot):
             status = _states[3]
         
         return status
-    
+
     def getComponentPositions(self, componentName):
+        """ Abstract, Returns a dictionary that contains all available named positions and their """
+        """     associated value arrays {'PositionName', [values, ...]} """
         return self._ros.getParam('%s/%s' % (self._serverTopic, componentName))
 
     def getComponents(self):
+        """ Returns a list of all available components """
         return self._ros.getParam(self._serverTopic).keys()
         
     def getComponentState(self, componentName, dontResolveName=False):
+        """ Return the a tuple containing the state (named and raw) of the named component.  """
+        """ Name resolution can be skipped by setting dontResolveName=True. """
+        """ ('Name or Empty', {'name': '...', 'positions': [..., ...], 'goals': [..., ...], 'joints': [..., ...] })"""
         topic = '/%(name)s_controller/state' % { 'name': componentName }
         state = self._ros.getSingleMessage(topic)
         

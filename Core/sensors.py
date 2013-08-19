@@ -6,10 +6,12 @@ import json, urllib2, base64
 
 from extensions import PollingProcessor
 
+""" Implementations of various sensor network updaters """
+
 class _valueHelper(object):
-	
 	@staticmethod
 	def filterValue(value, sensorType):
+		""" Used by all sensor processors to pre-process raw values from various sensors """
 		val = value
 		if value == '-' or value == '':
 			val = None
@@ -34,7 +36,7 @@ class _valueHelper(object):
 #
 # ZWave thread
 #
-# Listens to the ZigBee gateway's UDP broadcast messages, transforms the
+# Listens to the ZWave gateway's http api, transforms the
 # channel values according to the specified sensor kind and puts them in
 # the channel array.
 #
@@ -74,6 +76,7 @@ class ZWaveHomeController(PollingProcessor):
 		self._removePollingProcessor('zwave')
 		
 	def pollZWaveSensors(self):
+		""" Check the http api for sensors & values and add them to the channels list in the standard format """
 		try:
 			# http://192.168.1.109/devices
 			url = self._baseUrl
@@ -132,7 +135,7 @@ class ZWaveHomeController(PollingProcessor):
 #
 # ZWave thread
 #
-# Listens to the ZigBee gateway's UDP broadcast messages, transforms the
+# Listens to the ZWave gateway's http api, transforms the
 # channel values according to the specified sensor kind and puts them in
 # the channel array.
 #
@@ -175,6 +178,8 @@ class ZWaveVeraLite(PollingProcessor):
 		
 	# ZigBee thread main loop
 	def pollZWaveSensors(self):
+		""" Check the http api for sensors & values and add them to the channels list in the standard format """
+		""" first iteration pulls all data, subsequent loops pull only changed data since the last run """
 		try:
 			# http://192.168.1.158:3480/data_request?id=lu_sdata
 			# http://192.168.1.158:3480/data_request?id=lu_sdata&loadtime=1282441735&dataversion=441736333&timeout=60
@@ -269,6 +274,7 @@ class ZigBeeDirect(PollingProcessor):
 		
 	# ZigBee thread main loop
 	def pollZigbeeSensors(self):
+		""" Read the data from the Zigbee sensors directly connected to this machine """
 		try:
 			#data, _ = self._xbee.wait_read_frame()
 			data = self._zigbee.wait_read_frame()
@@ -366,6 +372,7 @@ class ZigBee(PollingProcessor):
 		
 	# ZigBee thread main loop
 	def pollZigbeeSensors(self):
+		""" Check the read sensors & values from the zigbee UDP broadcast and add them to the channels list in the standard format """
 		try:
 			data, _ = self.sock.recvfrom(10240, 0)
 		except Exception as e:
@@ -439,6 +446,7 @@ class GEOSystem(PollingProcessor):
 		self._removePollingProcessor('geoSensors')
 
 	def pollGeoSystem(self):
+		""" Check the GEO System database for sensors & values and add them to the channels list in the standard format """
 		rows = self._geoDao.getData(self._geoQuery)
 		# This appears to be needed or 'CALL exppower' doesn't update the power values,
 		# oddly, it updates the timestamp field though...
@@ -476,6 +484,8 @@ class GEOSystem(PollingProcessor):
 										}
 
 if __name__ == '__main__':
+	""" Run sensor updaters for all sensor types configured in the locations_config for the currently """
+	""" active experimental location """
 	import config
 	from history import SensorLog
 	

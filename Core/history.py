@@ -3,11 +3,15 @@ from Data.dataAccess import DataAccess
 from threading import Thread
 from extensions import PollingThread, PollingProcessor
 
+""" Classes that are responsible for storing history information in the database """
+
 class ActionHistory(object):
+    """ Handles action history requests """
     _defaultImageType = 'png'
     _runningThreads = {}
     
     def cancelPollingHistory(self, ruleName):
+        """ Stops the named polling history thread """
         if ActionHistory._runningThreads.has_key(ruleName):
             ah = ActionHistory._runningThreads[ruleName]
             ah.cancel()
@@ -17,6 +21,7 @@ class ActionHistory(object):
             return False
 
     def addPollingHistory(self, ruleName, delaySeconds):
+        """ Starts automatically polling and updating the action history table every x seconds with the specified rule name """
         if not ActionHistory._runningThreads.has_key(ruleName):
             ahw = PollingThread(target=self.addHistory, delayTime=delaySeconds, args=(ruleName,), completeCallback=self._removePollingHistory)
             ahw.start()
@@ -28,9 +33,12 @@ class ActionHistory(object):
         return ActionHistory._runningThreads.pop(ruleName, None)
 
     def addHistoryAsync(self, ruleName, imageBytes=None, imageType=None):
+        """ asynchronously updates the actionHistory table, returning immediately """  
         Thread(target=self.addHistory, args=(ruleName, imageBytes, imageType)).start()
 
     def addHistory(self, ruleName, imageBytes=None, imageType=None):
+        """ updates the action history table, blocking until all data is retrieved and stored """
+        """ returns true on successful update """
         
         from Robots.robotFactory import Factory
         cob = Factory.getCurrentRobot()
@@ -62,7 +70,8 @@ class ActionHistory(object):
 # database table.
 #
 ################################################################################
-class SensorLog(PollingProcessor):    
+class SensorLog(PollingProcessor):
+    """ Handles updating sensors of all types to the database """
     def __init__ (self, channels, name=''):
         super(SensorLog, self).__init__()
         self._dao = DataAccess().sensors
@@ -71,6 +80,7 @@ class SensorLog(PollingProcessor):
         self._name = name
                 
     def start(self):
+        """ Begin asynchronously updating changes in sensors """
         if self._name != '':
             print "Started updating database for %s sensor changes" % (self._name)
         else:
@@ -78,6 +88,7 @@ class SensorLog(PollingProcessor):
         self._addPollingProcessor('sensorHistory', self.checkUpdateSensors, (self._channels,), 0.01)
 
     def stop(self):
+        """ Stop updating the sensor table """
         if self._name != '':
             print "Stopped updating database for %s sensor changes" % (self._name)
         else:
@@ -86,6 +97,7 @@ class SensorLog(PollingProcessor):
         self._removePollingProcessor('sensorHistory')
 
     def checkUpdateSensors(self, channels):
+        """ Check the specified channels and update the database whenever changes are detected to the 'value' or 'status'"""
         for uuid, sensor in channels.items():
             if not self._logCache.has_key(uuid):
                 current = self._dao.getSensor(sensor['id'])

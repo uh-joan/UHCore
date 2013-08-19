@@ -4,6 +4,11 @@ import os
 import rosHelper
 
 class ROSMulti(object):
+    """ Experimental ros interface wrapping the complexities of communicating with multiple ros masters """
+    """ Creates a new process, configured with the appropriate variables and uses pipes to relay data """
+    """ to and from the current process.  The hope is to stablise this to the point that it can """
+    """ replace direct calls to rosHelper, allowing for communication and control of multiple robots """
+    """ from the same top level process. """
     def __init__(self, version=None, packagePath=None, packageName=None, rosMaster=None, overlayPath=None):
         localPipe, remotePipe = Pipe()
         self._pipe = localPipe

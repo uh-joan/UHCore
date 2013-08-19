@@ -3,9 +3,12 @@ import sys
 from config import robot_config
 
 class Factory(object):
+    """Factory methods for creating Robot classes"""
 
     @staticmethod
     def getCurrentRobot():
+        """ Retrieves the current Robot type from the database, given the active experiment location from the """
+        """ session control table and constructs the appropriate class """ 
         activeLocation = Locations().getActiveExperimentLocation()
         if activeLocation == None:
             print "No experiment location set"
@@ -21,7 +24,9 @@ class Factory(object):
         return None
         
     @staticmethod
-    def getRobot(robotName):
+    def getRobot(robotName=None):
+        """ Retrieves the named robot type from the database and constructs the appropriate class """
+        """ if robotName is None or Empty, acts like getCurrentRobot() """
         if robotName == None or robotName == '':
             return Factory.getCurrentRobot()
         

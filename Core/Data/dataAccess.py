@@ -1,4 +1,14 @@
 import MySQLdb, sys, math, time, datetime
+"""Handles all access to the database"""
+"""Everything eventually filters into either SQLDao.getData or SQLDao.saveData"""
+"""Pattern for all select statements: """
+""" Table names are resolved using python string comprehension"""
+""" Args are passed as a dictionary into the sql library which handles escaping and inserting into the query"""
+""" This can get a bit confusing because they both look like python string comprehension, however when"""
+"""   attempting to pass table names as args into sql, it will fail so we're stuck doing it this way"""
+"""Note: dataAccess.DataAccess is only kept for legacy support, going forward functions are categorised into their """
+"""    own classes.  Additionally, while table names can be passed into some of the constructors, this was dropped in """
+"""    later classes in favour of always reading from the config object"""
 
 class Locations(object):
     def __init__ (self, robotTable=None, userTable=None, locationTable=None, locationRange=None):

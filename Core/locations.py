@@ -4,6 +4,7 @@ from extensions import PollingProcessor
 import math
 
 class LocationProcessor(PollingProcessor):
+    """Abstract location processor, current concrete implementations are Human and Robot processors"""
     
     def __init__(self):
         super(LocationProcessor, self).__init__()
@@ -52,6 +53,8 @@ class LocationProcessor(PollingProcessor):
             updateLocation(locid, x, y, orientation)
 
 class RobotLocationProcessor(LocationProcessor):
+    """Update the location of the given robot (default currentRobot) in the database"""
+    """Can support any robot that implements getLocation()"""
     
     def __init__(self, robot=None):
         super(RobotLocationProcessor, self).__init__()
@@ -68,6 +71,11 @@ class RobotLocationProcessor(LocationProcessor):
         self._updateLoc = lambda locid, x, y, orientation: self._dao.saveRobotLocation(robId, locid, x, y, orientation)
 
 class HumanLocationProcessor(LocationProcessor):
+    """Update the location of the most likely tracked human in the database"""
+    """This updates both the user table (based on CurrentUser) and the location table for the location 'Current user location' """
+    """The idea, going forward, is to phase out the special location from the locations table, in order to eventually provide """
+    """    support for multiple simultaneous user tracking.  This, however, requires the integration of user tagging with the """
+    """    location tracker, and consistency upgrades to the tracked human id coming from the tracker."""
     
     def __init__(self):        
         super(HumanLocationProcessor, self).__init__()

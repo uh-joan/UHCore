@@ -4,6 +4,7 @@ from xml.etree import ElementTree as et
 from threading import RLock
 
 class MapProcessor(object):
+    """ Used to build the live image of the sensor network """
     _mapCache = {}
     _iconCache = {}
     _mapLock = RLock()
@@ -18,6 +19,8 @@ class MapProcessor(object):
 
     @property
     def mapBase(self):
+        """ Returns a copy of the base svg map file """
+        """ Caches initial map for fast access in subsequent calls """
         if not MapProcessor._mapCache.has_key(self._baseFile):
             MapProcessor._mapLock.acquire()
             try:
@@ -28,6 +31,8 @@ class MapProcessor(object):
         return copy.deepcopy(MapProcessor._mapCache[self._baseFile])
     
     def getIcon(self, iconId, sensorOn=False):
+        """ Returns the sensor icon (with option 'On' graphic') wrapped in a group node """
+        """ Caches icon for fast access in subsequent calls """
         key = str(iconId) + str(sensorOn)
         if not MapProcessor._iconCache.has_key(key):
             MapProcessor._iconLock.acquire()

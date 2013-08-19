@@ -12,11 +12,12 @@ from threading import RLock
 _threadLock = RLock()
 
 class ROS(object):
+    """ Interface class to ROS libraries and messaging system """
     _activeVersion = None
     _envVars = {}
     _userVars = None
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         ROS.configureROS(packageName='rospy')
         import rospy
         self._rospy = rospy
@@ -25,16 +26,22 @@ class ROS(object):
         self.initROS()
         
     def __del__(self):
+        """ Unregisters all subscribers when class is GC'd"""
         if hasattr(self, '_subscribers'):
             for sub in self._subscribers.values():
                 sub.unregister()
         
     def initROS(self, name='rosHelper'):
+        """ Activate ros, if necessary, safe for subsequent calls """
         with _threadLock:
             if not self._rospy.core.is_initialized():
                 self._rospy.init_node('rosHelper', anonymous=True, disable_signals=True)
         
     def getSingleMessage(self, topic, dataType=None, retryOnFailure=1, timeout=None):
+        """ Return the first message recieved on the specified topic """
+        """ if dataType is not specified, it will be automatically detected and imported by inspecting the topic """
+        """ defaults to one retry after a failure (aids with inconsistent network connections """
+        """ Timeout value, specified in seconds, is the time to wait for a message, None==Wait forever """ 
         try:
             if dataType == None:
                 if not self._topicTypes.has_key(topic):
@@ -62,6 +69,9 @@ class ROS(object):
                 return None
     
     def getParam(self, paramName, retry=5):
+        """ Return the value of a param on the parameter server, equivalent to rosparam 'paramName' """
+        """ Default to retry 5 times on failure, this was added due to seemingly fleeting connection """
+        """     problems with the rosparam server """
         with _threadLock:
             try:
                 return self._rospy.get_param(paramName)
@@ -76,17 +86,17 @@ class ROS(object):
                 return []
     
     def getTopics(self, baseFilter='', exactMatch=False, retry=10):
-        # topics = self._rospy.get_published_topics(baseFilter)
-        # if len(topics) == 0 and baseFilter.strip('/').find('/') == -1:
-        
-        # decided to do filtering a little different than ros
-        # ros requires an exact match (of the parent namespace)
-        # this can grab any partial matches
-        
-        # ros doesn't return topics when the full namespace is specified
-        # i.e. head_controller works and brings back all nested topics
-        # but head_controller/state does not
-        # in this case, get all of them and loop through
+        """ topics = self._rospy.get_published_topics(baseFilter) """
+        """ if len(topics) == 0 and baseFilter.strip('/').find('/') == -1: """
+        """ """
+        """ decided to do filtering a little different than ros """
+        """ ros requires an exact match (of the parent namespace) """
+        """ this can grab any partial matches """
+        """ """
+        """ ros doesn't return topics when the full namespace is specified """
+        """ i.e. head_controller works and brings back all nested topics """
+        """ but head_controller/state does not """
+        """ in this case, get all of them and loop through """
         topics = []
         with _threadLock:
             try:
@@ -111,6 +121,8 @@ class ROS(object):
         return topics
 
     def getMessageType(self, topic):
+        """ Inspect a topic to discover the message type then import the manifest and the message namespace """
+        """ Returns the python type() for the message """
         pubTopic = self.getTopics(topic, True)
         if len(pubTopic) != 0: 
             controller_msgType = pubTopic[0][1]
@@ -131,6 +143,9 @@ class ROS(object):
     
     @staticmethod
     def _getUserVars():
+        """ Load variables out of the users bashrc file.  This is added for convenience for users who """
+        """ Configure ROS in their bashrc, but can potentially cause lockups as it forces a bash shell to interactive mode """
+        """ In order to read the variables."""  
         if ROS._userVars == None:
             #This is a bit more dangerous as it loads the users .bashrc file in a forced interactive shell
             #while not actually being in an interactive shell.  any prompts could cause lockups
@@ -152,7 +167,7 @@ class ROS(object):
         return None
     
     @staticmethod
-    def _locateRosVersion():
+    def _locateRosVersion(): 
         if ROS._activeVersion == None:
             env = ROS._getUserVars()
             if env.has_key('ROS_DISTRO'):
@@ -175,6 +190,9 @@ class ROS(object):
     
     @staticmethod
     def _parseRosVersionSetupBash(version, onlyDifferent=True):
+        """ Load the setup.bash file in a bash terminal, and import the env variables into a dict """
+        """ onlyDifferent==True(default): Compare this dict to the current env vars and only return """
+        """ Variables that are new or different in the ros bash terminal """ 
         if not ROS._envVars.has_key(version):
             # executes the bash script and exports env vars
             bashScript = '/opt/ros/%s/setup.bash' % version
@@ -207,6 +225,7 @@ class ROS(object):
 
     @staticmethod
     def _parseBashEnviron(preCommand=''):
+        """ Execute a bash command and export the env to a dictionary """
         command = ['bash', '-c', ('%s; env' % preCommand).strip('; ')]
         pipe = Popen(command, stdout=PIPE)
         data = pipe.communicate()[0]
@@ -215,7 +234,10 @@ class ROS(object):
 
     @staticmethod
     def configureROS(version=None, packagePath=None, packageName=None, rosMaster=None, overlayPath=None):
-        """Any values not provided will be read from ros_config in config.py"""
+        """ Perform all tasks necessary to configure ROS interface for use.  All variables not specified """
+        """     are detected from first the ros_config(if specified) or from the users .bashrc """
+        """ Most common use is configureRos(packageName='name') in order to import a ros package for use"""
+        """ Can be called multiple times without issue """
         if version == None:
             if not ros_config.has_key('version'):
                 version = ROS._locateRosVersion()
@@ -281,7 +303,12 @@ class ROS(object):
                     print >> sys.stderr, repr(e)
 
 class RosSubscriber(object):
-    
+    """ Wrapper around a ros subscriber """
+    """ Features: """
+    """     Lazy initialisation """
+    """     Automatic disconnection on idle, and reconnection on access set idleTime=None to disable"""
+    """        Any call to hasNewMessage or lastMessage resets the idle timer """
+    """     Async message retrieval (stores last message received) """
     def __init__(self, topic, dataType, idleTime=15):
         with _threadLock:
             ROS.configureROS(packageName='rospy')
@@ -293,37 +320,48 @@ class RosSubscriber(object):
         self._dataType = dataType
         self._newMessage = False
         self._idleTimeout = idleTime
+        
+    def __del__(self):
+        self.unregister()
 
     @property
     def hasNewMessage(self):
+        """ Return true if the message has changed since last call to hasNewMessage """
+        """ Useful for topics which publish infrequently """
         self._touch()
         return self._newMessage
     
     @property
     def lastMessage(self):
+        """ Return the last message received from the topic """
         self._touch()
         self._newMessage = False
         return self._data
     
     def _touch(self):
+        """ Update class access time """
         self._lastAccess = time.time()
         if self._subscriber == None:
             with _threadLock:
                 self._subscriber = self._rospy.Subscriber(self._topic, self._dataType, self._callback)
     
     def unregister(self):
+        """ Unregister the subscriber """
         if self._subscriber != None:
             self._subscriber.unregister()
             self._subscriber = None
        
     def _callback(self, msg):
+        """ Store message received from the topic, disconnect if class is idle """
         self._data = msg
         self._newMessage = True
-        if time.time() - self._lastAccess > self._idleTimeout:
+        if self._idleTimeout != None and time.time() - self._lastAccess > self._idleTimeout:
             self.unregister()
 
 class Transform(object):
+    """ Wrapper around ros transform that handles common actions """
     def __init__(self, rosHelper=None, fromTopic=None, toTopic=None):
+        """ fromTopic and toTopic are the defaults to use in getTransform """
         with _threadLock:
             if(rosHelper == None):
                 self._ros = ROS()
@@ -341,6 +379,7 @@ class Transform(object):
         self._defaultTo = toTopic
     
     def getTransform(self, fromTopic=None, toTopic=None):
+        """ Call ros transform between specified coordinate frames (or constructor defaults if None) """
         if fromTopic == None:
             fromTopic = self._defaultFrom
         if toTopic == None:

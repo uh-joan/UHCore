@@ -2,6 +2,7 @@ import math
 from robot import ROSRobot
 
 class Sunflower(ROSRobot):
+    """ Concrete implementation of the Robot interface for the UH Sunflower model of robots """
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name, rosMaster):

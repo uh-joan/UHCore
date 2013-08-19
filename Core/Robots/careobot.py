@@ -7,6 +7,8 @@ from config import robot_config
 from collections import deque
 
 class CareOBot(robot.ROSRobot):
+    " Concrete implementation of Robot interface for IPA Care-O-Bot robots"
+    
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
 
     def __init__(self, name, rosMaster):
@@ -15,6 +17,7 @@ class CareOBot(robot.ROSRobot):
         super(CareOBot, self).__init__(name, ScriptServer, 'script_server', robot_config[name]['head']['camera']['topic'])
                
     def getCameraAngle(self):
+        "Return the vertical component of the camera angle, used by getImage for rotating the image when needed"
         state = self.getComponentState('head', True)
         if state == None:
             return None
@@ -53,6 +56,7 @@ class CareOBot(robot.ROSRobot):
         self.executeFunction("sleep", {'duration': milliseconds / 1000.0 })
         
     def unloadTray(self, height, blocking):
+        " Calls the 'unloadTrayServer' on to unload an object from the tray to a table assumed to be at the specified height"
 
         try:
             h = float(height)
@@ -91,6 +95,7 @@ class UnloadTrayClient(object):
             return robot._states[self._client.send_goal(goal)]
     
 class ScriptServer(object):
+    """ Concrete implementation of the robotInterface class using direct calls to simple_script_server """
     _specialCases = {
                     'light': {'function': 'set_light', 'mode': ''},
                     'sound': {'function': 'say', 'mode': 'FEST_EN' }
@@ -143,6 +148,8 @@ class ScriptServer(object):
                                 })
 
 class ActionLib(object):
+    """ Concrete implementation of the robot interface using the ActionLib client """
+    
     _specialCases = {
                     'light': {'function': 'set_light', 'mode': ''},
                     'sound': {'function': 'say', 'mode': 'FEST_EN' }
@@ -219,6 +226,8 @@ class ActionLib(object):
                                 })
 
 class PoseUpdater(robot.PoseUpdater):
+    """ Concrete implementation of pose updates for Care-O-Bot robots """
+    
     def __init__(self, robot):
         super(PoseUpdater, self).__init__(robot)
         self._rangeSensors = robot_config[robot.name]['phidgets']['topics']
@@ -241,11 +250,14 @@ class PoseUpdater(robot.PoseUpdater):
         self.updateStates(states)
         
     def getHeadStates(self, robot):
+        """ Returns a dictionary with values for sensor 'eyePosition' to the current angle of the camera """
         return {
                    'eyePosition': self.getComponentPosition(robot, 'head'),
                    }
     
-    def getPhidgetState(self):        
+    def getPhidgetState(self):
+        """ Return a tuple containing the averaged phidget sensors and a boolean indicating if the tray is empty """
+        """ (0.0, True) """
         trayIsEmpty = None                
         
         averages = []
@@ -299,11 +311,13 @@ class PoseUpdater(robot.PoseUpdater):
         return (p, stateName)
 
     def getTrayStates(self, robot):
+        """ Returns a dictionary containing the values for sensor variables 'trayStatus' and 'trayIs' """
         return {
                    'trayStatus': self.getComponentPosition(robot, 'tray'),
                    'trayIs': self.getPhidgetState() }
             
 if __name__ == '__main__':
+    """ Run pose and location updates for the currentRobot """
     from robotFactory import Factory
     robot = Factory.getCurrentRobot()
 #     frequency=math.pi*2/100

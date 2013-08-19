@@ -2,6 +2,8 @@ import sys
 import time
 import robot
 import random
+""" Dummy classes for running tests of the system without requiring a robot or simulator """
+""" All functions wait for a random time, and then return SUCCESS or Other positive data """
 
 class DummyRobot(robot.Robot):
     _imageFormats = ['BMP', 'EPS', 'GIF', 'IM', 'JPEG', 'PCD', 'PCX', 'PDF', 'PNG', 'PPM', 'TIFF', 'XBM', 'XPM']
