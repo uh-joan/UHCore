@@ -1,8 +1,9 @@
+""" Generic web and database configurations """
+""" TODO: Sensor configurations should be moved into the locations_config element as they can differ between sites """
 server_config = {
   # The port on which the web server will be running
   # Point your web browser to http://localhost:<http_port>
-  # must be above 104 to avoid root privilage!!
-
+  # must be above 104 to avoid root privilege!!
   'http_port':       1055,
 
   # The settings for the channel logging MySQL server / database / table
@@ -30,7 +31,6 @@ server_config = {
   
   # The port on which the program is listening for UDP broadcast messages
   # transmitted by the ZigBee gateway
-
   'udp_listen_port': 5000,
   'zigbee_usb_port': '/dev/ttyUSB0',
 
@@ -44,6 +44,10 @@ server_config = {
   # Settings for the zwave sensor network,
   'zwave_ip': '192.168.1.109',
 }
+
+""" Contains configuration information for each experiment site """
+""" The 'sensors' element controlls which sensors classes are loaded when sensors.py is run """
+""" The 'map' element is used to control the conversion between map coordinates and svg image coordinates """
 
 locations_config = {
   'ZUYD Apartment': {
@@ -66,6 +70,28 @@ locations_config = {
                      }
 }
 
+""" Controlls various magic strings that are specific to individulal robot models
+    Structure is as follows:
+        'Robot Name': {
+                        'componentName': {
+                                            'positions': {
+                                                            'generic': 'specific',
+                                                         }
+                                            ...other component specific settings...
+                                         }
+                     }
+    Some component settings are: 
+        tray:size==Activation range for the phidget sensors (COB Only)
+        head:camera:topic==ros topic to get the image from
+        head:camera:rotate: {
+                                'angle': when to rotate the image
+                                'distance': tolerance (angle+-distance)
+                                'amount': how much to rotate by (img.rotate(amount))
+                            }
+        hostname:override hostname constructed by robotFactory()
+            I.E. COB3.2 default is built as cob3-2-pc1, if hostname is set, it will be used instead
+    
+"""
 robot_config = {
                 'Care-O-Bot 3.2': {
                                    'phidgets': { 'topics': ['/range_0', '/range_1', '/range_2', '/range_3'], 'windowSize': 5 },
@@ -137,6 +163,7 @@ robot_config = {
                                    },
                 }
 
+""" Threshold level used to indicate when to display an action possibility on the siena gui """
 siena_config = {
     'likelihood': 0.1
 }
