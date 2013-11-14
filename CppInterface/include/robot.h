@@ -5,6 +5,25 @@
 #include <vector>
 
 /*
+ * Exception that is thrown if the robot instance fails to be created
+ * This is usually a result of an invalid configuration on the python
+ * side.  Check Core/config.py for configuration options
+ */
+class RobotBuildException: public std::exception {
+private:
+	const char* message;
+
+public:
+	RobotBuildException(const char* message) {
+		RobotBuildException::message = message;
+	}
+
+	virtual const char* what() const throw () {
+		return RobotBuildException::message;
+	}
+};
+
+/*
  * This is the public c++ interface into the UHCore python backend
  * Notes on usage: While this module is threadsafe, the PYTHON interpreter is NOT inherently threadsafe
  * All reasonable precautions have been taken to add thread safety, but it is a known issue that if
