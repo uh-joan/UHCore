@@ -80,7 +80,7 @@ class ProxemicMover(object):
                                                                                 target.pose.position.z,
                                                                                 math.degrees(yaw)))
                     location = [target.pose.position.x, target.pose.position.y, yaw]
-                    if self._robot.setComponentState('base', location) == 3:
+                    if self._robot.setComponentState('base', location) in [3, 'SUCCEEDED']:
                         return True
 
         except self._rospy.ServiceException, e:
