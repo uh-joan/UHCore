@@ -13,7 +13,8 @@ class ProxemicMover(object):
         self._robot = robot
         import Robots.rosHelper
         Robots.rosHelper.ROS.configureROS(packageName='accompany_proxemics')
-        Robots.rosHelper.ROS.initROS(self)
+        ros = Robots.rosHelper.ROS()
+        ros.initROS()
         import rospy
         import tf
         import accompany_context_aware_planner.srv
@@ -44,7 +45,11 @@ class ProxemicMover(object):
                                                        self._srvMsg)
         try:
             pose = self._geoMsg()
-            pose.orientation.w = self._tf.transformations.quaternion_from_euler(0,0,math.radians(theta))[3]
+            quaternion = self._tf.transformations.quaternion_from_euler(0,0,math.radians(theta))
+            pose.orientation.x = quaternion[0]
+            pose.orientation.y = quaternion[1]
+            pose.orientation.z = quaternion[2]
+            pose.orientation.w = quaternion[3]
             pose.position.x = x
             pose.position.y = y
             pose.position.z = 0

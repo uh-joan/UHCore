@@ -105,10 +105,11 @@ class SensorLog(PollingProcessor):
 
             status = str(sensor['status']).capitalize()
             if self._logCache[uuid]['status'] != status or self._logCache[uuid]['value'] != sensor['value']:
+                val = sensor['value'] if len(sensor['value']) > 1 else sensor['value'][0]
                 timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 success = self._dao.saveSensorLog(
                                                   sensor['id'],
-                                                  sensor['value'],
+                                                  val,
                                                   status,
                                                   timestamp,
                                                   sensor['room'],
@@ -117,7 +118,7 @@ class SensorLog(PollingProcessor):
                     print "Updated sensor log for %(id)s to %(status)s (%(value)s)" % { 
                                                                            'id':sensor['channel'],
                                                                            'status': status,
-                                                                           'value': sensor['value'],
+                                                                           'value': val,
                                                                            }
                     self._logCache[uuid]['value'] = sensor['value']
                     self._logCache[uuid]['status'] = status
