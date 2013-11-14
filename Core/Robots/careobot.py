@@ -116,10 +116,16 @@ class ScriptServer(object):
         
         #filter kwargs to only args in function
         argspec = inspect.getargspec(func)
-        args = { argName: kwargs[argName] for argName in argspec.args if argName in kwargs.keys() }
+        args = {}
+        for argName in argspec.args:
+            if argName in kwargs.keys():
+                args[argName] = kwargs[argName]
+        #args = { argName: kwargs[argName] for argName in argspec.args if argName in kwargs.keys() }
 
         ah = func(**args)
-        return ah.get_state()
+        
+        if funcName != 'sleep':
+            return ah.get_state()
     
     def stopComponent(self, name):
         if name in ScriptServer._specialCases:
@@ -289,7 +295,7 @@ class PoseUpdater(robot.PoseUpdater):
 
         p = []
         for position in averages:
-            p.append(round(position, 3))
+            p.append(round(min(position, self._rangeThreshold * 1.25), 3))
    
         return (p, trayIsEmpty)
 
