@@ -158,7 +158,8 @@ class ActionLib(object):
     
     _specialCases = {
                     'light': {'function': 'set_light', 'mode': ''},
-                    'sound': {'function': 'say', 'mode': 'FEST_EN' }
+                    'sound': {'function': 'say', 'mode': 'FEST_EN' },
+                    'play': {'function': 'play', 'mode': '' }
                     }
     
     def __init__(self):
