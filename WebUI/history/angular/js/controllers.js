@@ -43,6 +43,15 @@ historyApp.controller('EpisodesListCtrl', function EpisodesListCtrl($scope, $htt
     if ($scope.ruleName.indexOf(e)==-1) $scope.ruleName.push(e);
   }
 
+  $scope.clear_eventquery = function() {
+    $scope.eventquery="";
+  }
+
+  $scope.clear_eventlocation = function() {
+    $scope.eventlocation="";
+  }
+
+
 });
 
 historyApp.controller('ModalCtrl', function ($scope, $modal){

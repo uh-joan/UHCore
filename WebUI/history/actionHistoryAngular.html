@@ -2,7 +2,7 @@
 <html lang="en" ng-app="historyApp">
 <head>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-  	<title>Robot's memory Visualization</title>
+  	<title>Care-O-bot Memory Visualization</title>
   
 
 	<link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" rel="stylesheet">
@@ -26,7 +26,7 @@
 <body ng-controller="EpisodesListCtrl" >
 	<div class="container"><!-- was class="container-fluid"-->
 
-		<h1 align="center">Robot's memory Visualization</h1>
+		<h1 align="center">Care-O-bot Memory Visualization</h1>
 		<div class="row-fluid">
 			<div class="span3">
 		
@@ -35,10 +35,10 @@
 				@TODO preload the bs-typeahead for ruleName> 			{{loadRuleName()}}-->	
 
 				<b>>Search by</b></br>
-				<input type="text" ng-model="eventquery.name" bs-typeahead="ruleName" placeholder="Name"></br>
+				<input type="text" ng-click="clear_eventquery()" ng-model="eventquery.name" bs-typeahead="ruleName" placeholder="Name"></br>
 				<!--input type="text" ng-change="loadRuleName('lola')" ng-model="eventquery.name" bs-typeahead="ruleName" placeholder="Name"></br--> <!-- bs-typeahead="location" -->
 				
-				<input type="text" ng-model="locationquery.location" bs-typeahead="locationName" placeholder="Location"></br><!-- bs-typeahead="location" -->
+				<input type="text" ng-click="clear_locationquery()" ng-model="locationquery.location" bs-typeahead="locationName" placeholder="Location"></br><!-- bs-typeahead="location" -->
 				
 				<b>>Sort by</b></br>
 				<select ng-model="orderProp">
@@ -111,3 +111,4 @@
 	
 </body>
 </html>
+
