@@ -7,5 +7,7 @@ root = Root()
 root.data = Data()
 root.images = Images()
 root.mapHistory = MapHistory()
-root.iui = handlers.StaticFiles(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'iui'))
+#root.iui = handlers.StaticFiles(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'iui'))
+root.angular = handlers.StaticFiles(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'angular'))
 root.js = handlers.StaticFiles(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js'))
+

@@ -11,7 +11,7 @@ class Root(object):
     exposed = True
     
     def __init__(self):
-        self._index = 'actionHistory.html'
+        self._index = 'actionHistoryAngular.html'
     
     def GET(self, *args, **kwargs):
         if not cherrypy.request.path_info.endswith('/'):
