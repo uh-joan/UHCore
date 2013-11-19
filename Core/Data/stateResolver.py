@@ -53,15 +53,15 @@ class StateResolver(object):
     
     def evaluateRule(self, rule, value):
         """ Evaluation for rule based sensors (Currently use only for POWERLINE sensors) """
-            try:
-                # Rules are in Java notation
-                pyRule = rule.replace('&&', 'and').replace('||', 'or')
-                # Watts = float(value)
-                pyRule = pyRule.replace('Watts', str(value))
-                return eval(pyRule)
-            except Exception as e:
-                print >> sys.stderr, 'Error parsing rule "%(rule)s", Exception: %(exception)s' % { 'rule': rule, 'exception': e }
-                return None
+        try:
+            # Rules are in Java notation
+            pyRule = rule.replace('&&', 'and').replace('||', 'or')
+            # Watts = float(value)
+            pyRule = pyRule.replace('Watts', str(value))
+            return eval(pyRule)
+        except Exception as e:
+            print >> sys.stderr, 'Error parsing rule "%(rule)s", Exception: %(exception)s' % { 'rule': rule, 'exception': e }
+            return None
     
     def resolveStates(self, sensorList):
         """ Resolve the states of all sensors in the given list """

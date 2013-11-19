@@ -10,7 +10,7 @@ server_config = {
   'mysql_log_server':   'rh-database',
   'mysql_log_user':     'rhUser',
   'mysql_log_password': 'waterloo',
-  'mysql_log_db':       'Accompany',
+  'mysql_log_db':       'AccompanyResources',
   'mysql_log_table':    'SensorLog',
   
   'mysql_history_table':'ActionHistory',
@@ -60,7 +60,8 @@ locations_config = {
                             }
                      },
   'UH Robot House': {
-                     'sensors': ['ZigBee', 'GEOSystem', 'ZigBeeDirect'],
+#                     'sensors': ['ZigBee', 'GEOSystem', 'ZigBeeDirect'],
+                     'sensors': ['ZigBee', 'GEOSystem'],
                      'map': {
                                 'base':'RobotHouseMap.svg',
                                 'scale':0.275,
