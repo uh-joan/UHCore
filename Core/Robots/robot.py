@@ -260,11 +260,11 @@ class ROSRobot(Robot):
     
     @property
     def _transform(self):
-        """ Transform between the robot base frame and the map frame, used in getLocation() """
+        """ Transform from the map frame to the robot base frame (gives the robot base frame coordinate in map coordinate frame), used in getLocation() """
         if self._tf == None:
             try:
                 import rosHelper
-                self._tf = rosHelper.Transform(rosHelper=self._rs, toTopic='/map', fromTopic='/base_footprint')
+                self._tf = rosHelper.Transform(rosHelper=self._rs, toTopic='/base_footprint', fromTopic='/map')
             except Exception as e:
                 print >> sys.stderr, "Error occured while calling transform: %s" % repr(e)
         return self._tf
