@@ -264,7 +264,7 @@ class ROSRobot(Robot):
         if self._tf == None:
             try:
                 import rosHelper
-                self._tf = rosHelper.Transform(rosHelper=self._rs, toTopic='/map', fromTopic='/base_footprint')
+                self._tf = rosHelper.Transform(rosHelper=self._rs, toTopic='/base_footprint', fromTopic='/map')
             except Exception as e:
                 print >> sys.stderr, "Error occured while calling transform: %s" % repr(e)
         return self._tf
