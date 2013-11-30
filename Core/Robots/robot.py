@@ -260,7 +260,7 @@ class ROSRobot(Robot):
     
     @property
     def _transform(self):
-        """ Transform between the robot base frame and the map frame, used in getLocation() """
+        """ Transform from the map frame to the robot base frame (gives the robot base frame coordinate in map coordinate frame), used in getLocation() """
         if self._tf == None:
             try:
                 import rosHelper
