@@ -62,6 +62,49 @@ class ActionHistory(object):
         
         return historyId > 0
 
+    def addHistoryCompleteAsync(self, ruleName, imageBytes=None, imageType=None, imageOverheadBytes=None, imageOverheadType=None):
+        """ asynchronously updates the actionHistory table, returning immediately """  
+        Thread(target=self.addHistoryComplete, args=(ruleName, imageBytes, imageType,imageOverheadBytes,imageOverheadType)).start()
+
+    def addHistoryComplete(self, ruleName, imageBytes=None, imageType=None, imageOverheadBytes=None, imageOverheadType=None):
+        """ updates the action history table, blocking until all data is retrieved and stored """
+        """ returns true on successful update """
+        
+        from Robots.robotFactory import Factory
+        cob = Factory.getCurrentRobot()
+        dao = DataAccess()
+        dateNow = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        location = dao.getRobotByName(cob.name)['locationId']
+        
+        historyId = dao.saveHistory(dateNow, ruleName, location)
+        
+        if(historyId > 0):
+            dao.saveSensorHistory(historyId)
+
+            if imageType == None:
+                imageType = ActionHistory._defaultImageType
+
+            if imageBytes == None:
+                imageBytes = cob.getImage(retFormat=imageType)
+
+            if imageBytes != None:
+                dao.saveHistoryImage(historyId, imageBytes, imageType)
+
+            #the same but for the overhead camera image
+
+            if imageOverheadType == None:
+                imageOverheadType = ActionHistory._defaultImageType
+
+            if imageOverheadBytes == None:
+                imageOverheadBytes = cob.getImageOverhead(retFormat=imageOverheadType)
+
+            if imageOverheadBytes != None:
+                dao.saveHistoryImageOverhead(historyId, imageOverheadBytes, imageOverheadType)
+        
+        return historyId > 0
+
+
+
 ################################################################################
 #
 # Logger thread

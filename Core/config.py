@@ -20,6 +20,7 @@ server_config = {
   'mysql_location_table':'Locations',
   'mysql_robot_table':'Robot',
   'mysql_image_table':'Images',
+  'mysql_imageoverhead_table':'ImagesOverhead',
   'mysql_questions_table':'userInterfaceGUI',
   'mysql_responses_table':'userInterfaceGUI',
   'mysql_users_table':'Users',

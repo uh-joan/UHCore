@@ -1,6 +1,0 @@
->>> from Robots.rosHelper import ROS
->>> r = ROS()
->>> f = open('img2.jpg', 'wb')
->>> f.write(r.getSingleMessage('/camera_living/image_raw/compressed').data)
->>> f.close()
-
