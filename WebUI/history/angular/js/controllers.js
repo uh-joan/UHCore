@@ -12,7 +12,7 @@ historyApp.controller('EpisodesListCtrl', function EpisodesListCtrl($scope, $htt
     $scope.locationName = [];
   });
 
-  $scope.tagsItems = [{ label: "important", value: "important" },{ label:"unclear", value: "question" },{ label:"none", value: "0" }];
+  $scope.tagsItems = [{ label: "memorable", value: "important" },{ label:"interesting", value: "interesting" },{ label:"unclear", value: "question" },{ label:"none", value: "0" }];
   $scope.orderProp = '-time.narrative';
   //$scope.ruleName = 'name';
 
@@ -47,8 +47,8 @@ historyApp.controller('EpisodesListCtrl', function EpisodesListCtrl($scope, $htt
     $scope.eventquery="";
   }
 
-  $scope.clear_eventlocation = function() {
-    $scope.eventlocation="";
+  $scope.clear_locationquery = function() {
+    $scope.locationquery="";
   }
 
 

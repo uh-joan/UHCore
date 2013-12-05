@@ -51,8 +51,9 @@
 				</br><b>>Show</b></br>
 				<select ng-model="statusquery.tags">
 					<option value="">All</option>
-					<option value="important">Important</option>
-					<option value="question">Unclear</option>
+					<option ng-repeat="item in tagsItems" value="{{item.value}}">{{item.label}}</option>
+					<!--option value="important">Important</option>
+					<option value="question">Unclear</option-->
 				</select>	
 
 			</div>

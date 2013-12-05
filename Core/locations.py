@@ -111,6 +111,8 @@ class HumanLocationProcessor(LocationProcessor):
         user['xCoord'] = x
         user['yCoord'] = y
         user['orientation'] = theta
+        user['locationId'] = locid 
+
         self._dao.users.updateUser(user)
     
     def _getCurrentLoc(self):
