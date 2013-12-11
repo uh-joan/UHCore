@@ -13,7 +13,7 @@ historyApp.controller('EpisodesListCtrl', function EpisodesListCtrl($scope, $htt
   });
 
   $scope.tagsItems = [{ label: "memorable", value: "important" },{ label:"interesting", value: "interesting" },{ label:"unclear", value: "question" },{ label:"none", value: "0" }];
-  $scope.orderProp = '-time.narrative';
+  $scope.orderProp = 'time.narrative';
   //$scope.ruleName = 'name';
 
   

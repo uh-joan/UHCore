@@ -19,3 +19,25 @@ body {
   height: 100px;
   padding-top: 15px;
 }
+
+
+
+.inner {
+    outline: solid 1px;
+    float: left; 
+    width: 180px; 
+    height: 140px; 
+    margin: 10px; 
+    
+}
+
+
+.clearfix:before,
+.clearfix:after {
+    content: "";
+    display: table;
+}
+
+.clearfix:after {
+    clear: both;
+}

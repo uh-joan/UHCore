@@ -519,7 +519,7 @@ class ActionHistory(object):
     
     def updateTags(self, historyId, tags):
         sql = "UPDATE `%s`" % (self._historyTable)
-        sql += " SET `tags` = %(tags)s WHERE `actionHistoryId` = %(histid)s" 
+        sql += " SET `timestamp` = `timestamp`,`tags` = %(tags)s WHERE `actionHistoryId` = %(histid)s" 
         args = {
               'tags' : str(tags),
               'histid': historyId
@@ -948,10 +948,14 @@ class SQLDao(object):
             cursor.close()
             return rows
         except Exception as e:
-            cursor.close()
+            
             # Server connection was forcibly severed from the server side
             # retry the request
             if e.args[0] == 2006:
+                cursor.close()
+                return self.getData(sql, args, trimString)
+
+            if e.args[0] == 2014:
                 return self.getData(sql, args, trimString)
             
             if len(e.args) > 1:
