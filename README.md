@@ -10,6 +10,14 @@ __CppInterface:__ Provides C++ libraries for UHCore\Robot and UHCore\ActionHisto
 __CppInterfaceTest:__ Simple examples of how to use the above library  
 __WebUI:__ Cherrypy based web interfaces.  Any web rendering code (including UI and API code) goes here. 
 
-_history_ Angular-based history of events.
+_history:_ Angular-based history of events. It takes all the events from RESTful API on the server/db through JSON internet media type to show the data on the client-side.
+
+This represents the COB robot memory of the recent events.
+
+Pictures of the interface here:
+
+http://adapsys.stca.herts.ac.uk/~js12agl/img/screen01.jpg
+
+http://adapsys.stca.herts.ac.uk/~js12agl/img/screen02.jpg
 
 __Core:__ Primary repository for robot and data manipulation.  Most code lives here.  
