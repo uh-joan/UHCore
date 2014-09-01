@@ -27,3 +27,5 @@ http://adapsys.stca.herts.ac.uk/~js12agl/img/screen02.jpg
 ---
 
 __Core:__ Primary repository for robot and data manipulation.  Most code lives here.  
+
+bla bla
