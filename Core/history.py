@@ -75,11 +75,12 @@ class ActionHistory(object):
         dao = DataAccess()
         dateNow = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         location = dao.getRobotByName(cob.name)['locationId']
-        
-        historyId = dao.saveHistory(dateNow, ruleName, location)
+        user = self._dao.users.getActiveUser['userId']
+
+        historyId = dao.saveHistoryComplete(dateNow, ruleName, location, user)
         
         if(historyId > 0):
-            dao.saveSensorHistory(historyId)
+            #dao.saveSensorHistory(historyId)
 
             if imageType == None:
                 imageType = ActionHistory._defaultImageType
