@@ -16,7 +16,7 @@ Toolset for building the framework.
 
 Pictures of the interface here:
 
-http://adapsys.stca.herts.ac.uk/~js12agl/img/screen01.jpg
+<img src="http://adapsys.stca.herts.ac.uk/~js12agl/img/screen01.jpg">
 
-http://adapsys.stca.herts.ac.uk/~js12agl/img/screen02.jpg
+<img src="http://adapsys.stca.herts.ac.uk/~js12agl/img/screen02.jpg">
 
