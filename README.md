@@ -19,10 +19,9 @@ Angular-based history of events. It takes all the events from RESTful API on the
 This represents the COB robot memory of the recent events.
 
 Pictures of the interface here:
+<img src="http://adapsys.stca.herts.ac.uk/~js12agl/img/screen01.jpg">
 
-http://adapsys.stca.herts.ac.uk/~js12agl/img/screen01.jpg
-
-http://adapsys.stca.herts.ac.uk/~js12agl/img/screen02.jpg
+<img src="http://adapsys.stca.herts.ac.uk/~js12agl/img/screen02.jpg">
 
 ---
 
